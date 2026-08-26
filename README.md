@@ -67,6 +67,7 @@ python ai_gen.py
 ## Customization 🎨
 
 - **Subtitles**: You can edit `gen_subtitle_hindi.sh` to change the language or modify `ai_gen.py` to change the subtitle style (colors, font size, position).
+  - **Changing Subtitle Language**: By default, `gen_subtitle_hindi.sh` is hardcoded to Hindi (`-l hi`). To change it to English, edit the script and change `-l hi` to `-l en`. For automatic language detection, remove the `-l` flag entirely or change it to `-l auto`.
 - **Video Style**: Modify `ai_gen.py` to tweak the prompts for the AI image generator to get different visual styles (e.g., anime, cinematic, cartoon).
 
 ## Contributing 🤝
