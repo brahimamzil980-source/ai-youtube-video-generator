@@ -1,8 +1,8 @@
 # AI Video Generator 🎬
 
-A fully automated AI video generation tool that produces YouTube Shorts/TikToks using free AI services. It generates a script, creates AI voices, fetches or generates AI images, adds subtitles, and even automatically uploads to YouTube.
+A Free and Open-Source, No API KEY, Local, AI Youtube Shorts Generator. It can also auto-publish your generated video to YouTube!
 
-**100% Free** - No paid APIs required! Uses local Whisper for subtitles, `g4f` for AI models, and Google's YouTube Data API for uploads.
+This fully automated tool generates a script, creates AI voices using `edge-tts`, fetches or generates AI images via `g4f`, adds subtitles via local `whisper.cpp`, and uploads your finished Short to YouTube using the Google Cloud YouTube Data API. All without spending a dime on API keys!
 
 ## Features ✨
 - 📝 **AI Script Generation**: Automatically writes engaging stories or facts.
