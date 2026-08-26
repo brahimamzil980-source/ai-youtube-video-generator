@@ -1,0 +1,35 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+*.log
+ai_gen.log
+
+# Credentials
+client_secrets.json
+*-oauth2.json
+upload_video.py-oauth2.json
+
+# Generated files
+*.mp3
+*.mp4
+*.srt
+*.png
+*.jpg
+*.jpeg
+temp_with_subs.mp4
+
+# Project specific metadata/text
+youtube_metadata.json
+hindi_story.txt

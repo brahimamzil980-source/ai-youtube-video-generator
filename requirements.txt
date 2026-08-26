@@ -1,0 +1,10 @@
+g4f
+moviepy==1.0.3
+requests
+edge-tts
+numpy
+Pillow
+tqdm
+google-api-python-client
+oauth2client
+httplib2
