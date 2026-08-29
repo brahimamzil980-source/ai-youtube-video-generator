@@ -43,11 +43,11 @@ def process_subtitles(video_file):
         subprocess.run(["bash", "./gen_subtitle_hindi.sh", video_file], check=True)
         
         video_name = os.path.splitext(os.path.basename(video_file))[0]
-        srt_file = f"/sdcard/aiwu/{video_name}.srt"
+        srt_file = os.path.join(os.getcwd(), f"{video_name}.srt")
         
         if not os.path.exists(srt_file):
             log(f"⚠️ Subtitle file not found: {srt_file}")
-            # Try alternative path if needed, but script says /sdcard/aiwu/
+            # Try alternative path if needed (now project folder)
             return
             
         log("🔥 Burning subtitles into video with high-visibility style...")
@@ -1366,7 +1366,7 @@ Story: {hindi_story}"""
     narration_audio = audio
     
     # Try to add background music
-    bg_music_dir = "/sdcard/ALL_PYTHON_PROGRAMs/bgMusics/"
+    bg_music_dir = os.path.join(os.getcwd(), "bgMusics")
     bg_music_files = []
     if os.path.exists(bg_music_dir):
         bg_music_files = [os.path.join(bg_music_dir, f) for f in os.listdir(bg_music_dir) if f.endswith(".mp3")]

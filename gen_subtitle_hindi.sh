@@ -11,10 +11,11 @@ BASENAME=$(basename "$VIDEO")
 NAME="${BASENAME%.*}"
 
 WAV_FILE="/tmp/${NAME}.wav"
-OUTPUT_FILE="/sdcard/aiwu/${NAME}"
+OUTPUT_FILE="${PWD}/${NAME}"
 
-MODEL="/root/models/ggml-base.bin"
-WHISPER="/root/binary/whisper-cli"
+# Edit these two lines to match YOUR system (or set via env: WHISPER_MODEL, WHISPER_BIN)
+MODEL="${WHISPER_MODEL:-/root/models/ggml-base.bin}"
+WHISPER="${WHISPER_BIN:-/root/binary/whisper-cli}"
 
 echo "Converting video to WAV..."
 ffmpeg -loglevel error -i "$VIDEO" -ar 16000 -ac 1 -c:a pcm_s16le "$WAV_FILE"
