@@ -1,0 +1,10 @@
+{
+  "name": "brahim-studio",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test scripts/api.test.mjs",
+    "dev": "node scripts/dev.mjs"
+  }
+}
