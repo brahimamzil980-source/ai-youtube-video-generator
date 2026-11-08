@@ -12,7 +12,7 @@
 // directly (tests) only exercises the API routes.
 
 import { handleSync, syncStatus } from './sync.js';
-import { handleKeys, withStoredKeys } from './keys.js';
+import { handleKeys, withStoredKeys, providerDetail } from './keys.js';
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -216,14 +216,17 @@ async function callProvider(url, init, timeoutMs) {
 
 const TIMEOUT_MESSAGE = 'تعذر تأكيد اكتمال الطلب بسبب مشكلة اتصال أو انتهاء المهلة. راجع استخدام حساب المزوّد قبل المحاولة مجددًا.';
 
-// Maps an upstream failure to a sanitized Arabic message. Never echoes the body.
-function providerFailure(response) {
+// Maps an upstream failure to an Arabic message plus the provider's sanitized reason.
+async function providerFailure(response) {
   const s = response.status;
-  if (s === 401 || s === 403) return fail('المزوّد رفض بيانات الاتصال أو صلاحيات النموذج.', 502);
-  if (s === 429) return fail('المزوّد أوقف الطلب بسبب الرصيد أو حد الاستخدام.', 429);
-  if (s === 400) return fail('المزوّد رفض الطلب (قد يكون الوصف مخالفًا لسياسة المحتوى أو أن الإعداد غير مدعوم لهذا النموذج).', 502);
-  if (s === 404) return fail('النموذج أو المورد غير موجود لدى المزوّد. تحقق من اسم النموذج في إعدادات الخادم.', 502);
-  return fail('تعذر إكمال الطلب لدى المزوّد. تحقق من إعداد النموذج والخدمة.', 502);
+  let detail = null;
+  try { detail = providerDetail(await response.json()); } catch {}
+  const answer = (message, status) => json(detail ? { error: message, detail } : { error: message }, status);
+  if (s === 401 || s === 403) return answer('المزوّد رفض بيانات الاتصال أو صلاحيات النموذج.', 502);
+  if (s === 429) return answer('المزوّد أوقف الطلب بسبب الرصيد أو حد الاستخدام.', 429);
+  if (s === 400) return answer('المزوّد رفض الطلب (قد يكون الوصف مخالفًا لسياسة المحتوى أو أن الإعداد غير مدعوم لهذا النموذج).', 502);
+  if (s === 404) return answer('النموذج أو المورد غير موجود لدى المزوّد. تحقق من اسم النموذج في إعدادات الخادم.', 502);
+  return answer('تعذر إكمال الطلب لدى المزوّد (' + s + '). تحقق من إعداد النموذج والخدمة.', 502);
 }
 
 const openaiHeaders = (env, extra = {}) => ({ authorization: 'Bearer ' + env.OPENAI_API_KEY, ...extra });
@@ -350,6 +353,7 @@ function videoSummary(data) {
     size: data.size ?? null,
     model: data.model ?? null,
     failed: data.status === 'failed',
+    ...(data.status === 'failed' && providerDetail(data) ? { detail: providerDetail(data) } : {}),
   };
 }
 

@@ -311,9 +311,9 @@ async function pollJobs() {
             if (r.ok) {
               job.status = data.status;
               job.progress = data.progress;
-              if (data.status === 'failed') job.message = 'رفض المزوّد أو فشل في إنشاء الفيديو. عدّل الوصف أو الصورة وجرّب من جديد.';
+              if (data.status === 'failed') job.message = 'رفض المزوّد أو فشل في إنشاء الفيديو. عدّل الوصف أو الصورة وجرّب من جديد.' + (data.detail ? ' [تفاصيل المزوّد: ' + data.detail + ']' : '');
             } else if (r.status !== 504) {
-              job.message = data.error;
+              job.message = data.error + (data.detail ? ' [تفاصيل المزوّد: ' + data.detail + ']' : '');
             }
           } catch { /* network blip: try again next round */ }
         }
@@ -334,7 +334,7 @@ async function downloadJob(p, job) {
     const r = await fetch('/api/video/content?id=' + encodeURIComponent(job.id), { cache: 'no-store' });
     if (!r.ok) {
       let msg = 'تعذر تنزيل الفيديو.';
-      try { msg = (await r.json()).error || msg; } catch {}
+      try { const d = await r.json(); msg = (d.error || msg) + (d.detail ? ' [تفاصيل المزوّد: ' + d.detail + ']' : ''); } catch {}
       job.status = r.status === 410 ? 'expired' : 'error';
       job.message = msg;
       return;

@@ -119,7 +119,11 @@ async function api(path, body, { binary = false } = {}) {
   }
   if (!response.ok) {
     let message = 'تعذر إكمال الطلب (' + response.status + ').';
-    try { message = (await response.json()).error || message; } catch {}
+    try {
+      const data = await response.json();
+      message = data.error || message;
+      if (data.detail) message += ' [تفاصيل المزوّد: ' + data.detail + ']';
+    } catch {}
     if (response.status === 401) message = 'انتهت الجلسة أو لم تسجّل الدخول. أعد فتح الموقع وسجّل الدخول.';
     throw Error(message);
   }
