@@ -3,6 +3,8 @@
 
 const KEY_LABELS = { openai: 'OpenAI', anthropic: 'Claude' };
 let keyStorage = false;
+// Keeps '••••ABCD' left-to-right inside Arabic text.
+const masked = (last4) => '\u2066••••' + last4 + '\u2069';
 
 async function refreshKeys() {
   let data = null;
@@ -18,8 +20,8 @@ async function refreshKeys() {
     const info = data?.[provider];
     const text = !info ? '—'
       : info.source === 'server' ? '● مضبوط في أسرار الاستضافة' + (info.overridesStored ? ' (له الأولوية على المفتاح المحفوظ هنا)' : '')
-      : info.source === 'stored' ? '● محفوظ هنا ••••' + info.last4
-      : info.source === 'broken' ? '⚠ المفتاح المحفوظ (••••' + info.last4 + ') لم يعد قابلًا للقراءة. احفظه من جديد.'
+      : info.source === 'stored' ? '● محفوظ هنا ' + masked(info.last4)
+      : info.source === 'broken' ? '⚠ المفتاح المحفوظ (' + masked(info.last4) + ') لم يعد قابلًا للقراءة. احفظه من جديد.'
       : '○ لا يوجد مفتاح';
     $('key-' + provider + '-status').textContent = text;
     $('key-' + provider + '-save').disabled = !keyStorage;
@@ -50,7 +52,7 @@ for (const provider of Object.keys(KEY_LABELS)) {
     try {
       const res = await keyRequest(provider, 'PUT', '', { key });
       input.value = '';
-      toast('تم حفظ مفتاح ' + KEY_LABELS[provider] + ' (••••' + res.last4 + ')' + (res.overriddenByServer ? ' — لكن مفتاح الاستضافة له الأولوية' : ''));
+      toast('تم حفظ مفتاح ' + KEY_LABELS[provider] + ' (' + masked(res.last4) + ')' + (res.overriddenByServer ? ' — لكن مفتاح الاستضافة له الأولوية' : ''));
       await refreshKeys();
       await refreshStatus();
     } catch (e) {
