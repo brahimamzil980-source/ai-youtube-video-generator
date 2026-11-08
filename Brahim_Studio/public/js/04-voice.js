@@ -120,7 +120,7 @@ function updateTtsState() {
     ? 'تعذر التحقق من الاتصال بالخادم.'
     : tts?.configured
       ? '● مهيّأ — ' + tts.model + ' (أول ملف ناجح يؤكد الصلاحية)'
-      : '○ غير مفعّل — يلزم ضبط OPENAI_API_KEY كسرّ في الخادم';
+      : '○ غير مفعّل — أضف مفتاح OpenAI من «الاتصال والبيانات»';
   $('ttsgenerate').disabled = ttsBusy || !tts?.configured;
   countVoice();
 }

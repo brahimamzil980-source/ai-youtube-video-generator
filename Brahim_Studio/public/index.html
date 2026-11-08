@@ -170,7 +170,7 @@ audio{width:100%;margin-top:12px}
         <pre id="aianswer" dir="auto">الجواب سيظهر هنا بعد إرسال طلبك.</pre>
         <div class="actions"><button id="aicopy" class="secondary" disabled>نسخ الجواب</button><button id="aitoscene" class="secondary" disabled>إلى المشهد</button><button id="aitovoice" class="secondary" disabled>إلى الصوت</button></div>
         <p class="hint">هذا ربط API مستقل. لا يستورد محادثاتك من ChatGPT أو Claude.</p>
-        <div class="card"><h3>تفعيل الاتصال</h3><p>المفاتيح تُضبط فقط كأسرار (Secrets) في إعدادات الخادم: <code>OPENAI_API_KEY</code> و<code>ANTHROPIC_API_KEY</code>. لا تضع المفاتيح في النصوص أو المحادثة.</p><small>حالة «مهيّأ» تعني وجود مفتاح في الخادم؛ أول إجابة ناجحة تؤكد صلاحية الاتصال.</small></div>
+        <div class="card"><h3>تفعيل الاتصال</h3><p>أضف مفتاح OpenAI أو Claude من صفحة «الاتصال والبيانات» ← «مفاتيح API»، أو كأسرار (Secrets) في إعدادات الاستضافة. لا تضع المفاتيح في النصوص أو المحادثة.</p><small>حالة «مهيّأ» تعني وجود مفتاح في الخادم؛ أول إجابة ناجحة تؤكد صلاحية الاتصال.</small></div>
       </div>
     </div>
   </section>
@@ -246,6 +246,24 @@ audio{width:100%;margin-top:12px}
       <div id="connectiongrid" class="statusgrid"><div><span>جارٍ التحقق…</span><span></span></div></div>
       <div class="actions"><button id="statusrefresh" class="secondary">تحديث الحالة</button></div>
       <p class="hint">«مهيّأ» يعني أن المفتاح موجود في الخادم فقط؛ أول نتيجة ناجحة هي التي تؤكد الرصيد والصلاحيات. حد الطلبات المؤقت حماية إضافية فقط: ضع حدًا شهريًا للإنفاق في لوحة OpenAI وAnthropic.</p>
+      <h2>مفاتيح API</h2>
+      <p class="hint">الصق المفتاح هنا فقط، وليس في المحادثات أو النصوص. يُرسل للخادم ويُحفظ مشفّرًا في قاعدة بيانات موقعك، ولا يعود للمتصفح أبدًا: يظهر فقط آخر 4 حروف. إذا كان المفتاح مضبوطًا أيضًا في أسرار الاستضافة، تُستعمل نسخة الاستضافة.</p>
+      <p id="keystorage" class="hint"></p>
+      <div class="card keyrow">
+        <h3>OpenAI</h3>
+        <p id="key-openai-status" class="hint" role="status">جارٍ التحقق…</p>
+        <label for="key-openai-input">مفتاح OpenAI الجديد</label>
+        <input id="key-openai-input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" dir="ltr" placeholder="sk-…">
+        <div class="actions"><button id="key-openai-save" class="primary">حفظ المفتاح</button><button id="key-openai-test" class="secondary">اختبار (مجاني)</button><button id="key-openai-delete" class="secondary">حذف</button></div>
+      </div>
+      <div class="card keyrow">
+        <h3>Claude (Anthropic)</h3>
+        <p id="key-anthropic-status" class="hint" role="status">جارٍ التحقق…</p>
+        <label for="key-anthropic-input">مفتاح Claude (Anthropic) الجديد</label>
+        <input id="key-anthropic-input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" dir="ltr" placeholder="sk-ant-…">
+        <div class="actions"><button id="key-anthropic-save" class="primary">حفظ المفتاح</button><button id="key-anthropic-test" class="secondary">اختبار (مجاني)</button><button id="key-anthropic-delete" class="secondary">حذف</button></div>
+      </div>
+      <p class="hint">«اختبار» يطلب قائمة النماذج من المزوّد، وهو طلب مجاني. ضع حدًا شهريًا للإنفاق في لوحة OpenAI وAnthropic.</p>
       <h2>المزامنة بين الأجهزة</h2>
       <p id="syncstatus" class="hint" role="status" aria-live="polite">جارٍ التحقق…</p>
       <p id="syncusage" class="hint"></p>
