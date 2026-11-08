@@ -11,6 +11,8 @@
 // The build step prepends `const HTML` and `const APP_JS`; importing this file
 // directly (tests) only exercises the API routes.
 
+import { handleSync, syncStatus } from './sync.js';
+
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
@@ -114,6 +116,7 @@ function status(env) {
       tts: { configured: openai, provider: 'OpenAI', model: m.tts, voices: TTS_VOICES, languages: Object.keys(TTS_LANGUAGES), formats: ['mp3', 'wav'], maxChars: TTS_MAX_CHARS },
       video: { configured: openai, provider: 'OpenAI', model: m.video, ratios: Object.keys(VIDEO_SIZES), seconds: VIDEO_SECONDS },
     },
+    sync: syncStatus(env),
     limits: { windowMinutes: RATE_WINDOW_MS / 60000, perWindow: rateLimits(env), scope: 'per-instance best effort' },
   };
 }
@@ -411,6 +414,9 @@ const POST_ROUTES = {
 async function handleApi(request, env, url) {
   const user = authenticatedUser(request);
   if (!user) return fail('سجّل الدخول لفتح هذه الميزة.', 401);
+
+  const synced = await handleSync(request, env, url, user, { json, fail, readLimited, securityHeaders: SECURITY_HEADERS });
+  if (synced) return synced;
 
   if (request.method === 'GET') {
     if (url.pathname === '/api/ai/status') return json(status(env));

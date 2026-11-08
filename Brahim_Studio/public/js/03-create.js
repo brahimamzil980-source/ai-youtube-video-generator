@@ -140,10 +140,14 @@ function renderJobs(p) {
   }
 }
 
+const galleryTokens = new WeakMap();
 async function renderGallery(p, container) {
-  container.replaceChildren();
+  const token = (galleryTokens.get(container) || 0) + 1;
+  galleryTokens.set(container, token);
+  const boxes = [];
   for (const out of p.outputs.slice().reverse()) {
     const url = await assetUrl(out.assetId);
+    if (galleryTokens.get(container) !== token) return; // a newer render started
     const box = node('div', null, 'asset');
     if (url) {
       const el = node(out.kind === 'video' ? 'video' : 'img');
@@ -158,12 +162,13 @@ async function renderGallery(p, container) {
       if (!confirm('حذف هذه النتيجة من المتصفح؟')) return;
       p.outputs = p.outputs.filter((o) => o !== out);
       save();
-      await deleteAsset(out.assetId).catch(() => {});
+      await forgetAsset(out.assetId);
       if (p.id === currentProjectId) showProject(p);
       render();
     }));
-    container.append(box);
+    boxes.push(box);
   }
+  container.replaceChildren(...boxes);
 }
 
 async function useAsReference(p, out) {
@@ -231,7 +236,7 @@ async function generateVideo(p) {
   setGenerating(true, 'جارٍ إرسال مهمة الفيديو…');
   try {
     const job = await api('/api/video', { prompt: p.text, ratio: p.ratio, seconds: p.duration, reference });
-    p.jobs.push({ id: job.id, status: job.status, progress: job.progress, seconds: p.duration, size: VIDEO_SIZES[p.ratio].join('x'), model: status.model, createdAt: new Date().toISOString() });
+    p.jobs.push({ id: job.id, device: DEVICE_ID, status: job.status, progress: job.progress, seconds: p.duration, size: VIDEO_SIZES[p.ratio].join('x'), model: status.model, createdAt: new Date().toISOString() });
     save();
     setGenerating(false, 'تم إنشاء مهمة الفيديو. التوليد يستغرق عادة بضع دقائق؛ يمكنك متابعة العمل وستُحفظ النتيجة تلقائيًا ما دام الموقع مفتوحًا.');
     showProject(p);
@@ -296,6 +301,8 @@ async function pollJobs() {
   try {
     for (const p of db.projects) {
       for (const job of p.jobs) {
+        // Only the device that started a job polls and downloads it (avoids duplicate outputs).
+        if (job.device && job.device !== DEVICE_ID) continue;
         if (['queued', 'in_progress'].includes(job.status)) {
           pending = true;
           try {
@@ -420,7 +427,7 @@ onRender(() => {
       if (!confirm('حذف المشروع ونتائجه من هذا المتصفح؟')) return;
       db.projects = db.projects.filter((x) => x.id !== p.id);
       save();
-      for (const out of p.outputs) await deleteAsset(out.assetId).catch(() => {});
+      for (const out of p.outputs) await forgetAsset(out.assetId);
       if (currentProjectId === p.id) resetProject();
       render();
     }));
