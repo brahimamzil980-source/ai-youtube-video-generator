@@ -6,7 +6,7 @@ let aiAnswer = '';
 function updateAIState() {
   const provider = providerStatus?.providers?.[$('aiprovider').value];
   $('aiconnection').textContent = provider
-    ? provider.configured ? '● مهيّأ — ' + provider.model + ' (أول جواب ناجح يؤكد الصلاحية)' : '○ غير مفعّل — يلزم مفتاح API في الخادم'
+    ? provider.configured ? '● مهيّأ — ' + provider.model + ' (أول جواب ناجح يؤكد الصلاحية)' : '○ غير مفعّل — أضف المفتاح من «الاتصال والبيانات»'
     : 'تعذر التحقق من الاتصال. حاول التحديث.';
   $('aisend').disabled = aiBusy || !provider?.configured;
   $('airefresh').disabled = aiBusy;

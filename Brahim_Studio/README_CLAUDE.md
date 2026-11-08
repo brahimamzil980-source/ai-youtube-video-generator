@@ -58,6 +58,20 @@ The voice studio accepts up to 40,000 characters. The provider limit (4,000 per 
 
 Verified: `scripts/audio.test.mjs` (7 tests). Real ffmpeg MP3s (24 kHz mono CBR and 44.1 kHz stereo VBR) and WAVs were joined and checked with ffprobe: correct duration, 0 decode errors. A Playwright iPhone run on a mocked provider covered a 4-part text with a forced failure on part 2, then a resume that requested only the 3 missing parts and played the joined file. Not verified with real OpenAI audio: the joining assumes OpenAI returns standard MP3/WAV, which still needs a live check.
 
+## 0d. API keys entered in the app — 8 November 2026 (Claude, fifth session)
+
+The owner chose to add an in-app key field, because the Sites UI showed no place for secrets. It lives in Settings → «مفاتيح API», one card each for OpenAI and Claude.
+
+- **Server** (`worker/keys.js`, inlined by the build):
+  - Routes: `GET /api/keys` returns only the source and last 4 characters; `PUT|DELETE /api/keys/<provider>`; `POST /api/keys/<provider>/test` calls the free `/v1/models` endpoint, limited to 10 calls per 10 minutes.
+  - Keys are stored in D1 table `provider_keys`, encrypted with AES-GCM using the owner and provider as additional data. The encryption key is derived from the `KEY_ENCRYPTION_SECRET` secret when set; otherwise a random 256-bit key is generated once and kept in R2 at `system/provider-key-master.bin`, separate from the D1 rows.
+  - Writes require same-origin and a key-shaped value. Keys are scoped per owner.
+  - `withStoredKeys()` fills in `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` for every other route, but only when no server secret exists: a hosting secret always wins.
+- **Client** (`public/js/065-keys.js`): the password-type input is cleared after save and on page hide. The key is never stored in the browser and never shown again.
+- **Requires** the same D1 (`DB`) + R2 (`MEDIA`) bindings as sync. Without them the field is disabled and explains why.
+- **Security trade-off accepted by the owner:** anyone with access to both the D1 data and the R2 master key could decrypt the keys. Setting `KEY_ENCRYPTION_SECRET` as a hosting secret removes the R2 half of that risk.
+- **Verified with mocks:** `scripts/keys.test.mjs` (9 tests: encryption at rest, no leaks through any route, precedence, owner scope, test endpoint, delete, wrong secret → "broken") and an iPhone Playwright run (save → test → generate an image with the saved key → delete; the key never appears in the page or localStorage).
+
 ## 1. Product intent and user context
 
 - Product name: **Brahim Studio** (temporary working name, not a final branding decision).

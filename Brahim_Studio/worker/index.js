@@ -12,6 +12,7 @@
 // directly (tests) only exercises the API routes.
 
 import { handleSync, syncStatus } from './sync.js';
+import { handleKeys, withStoredKeys } from './keys.js';
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -414,6 +415,11 @@ const POST_ROUTES = {
 async function handleApi(request, env, url) {
   const user = authenticatedUser(request);
   if (!user) return fail('سجّل الدخول لفتح هذه الميزة.', 401);
+
+  const keys = await handleKeys(request, env, url, user, { json, fail, readLimited });
+  if (keys) return keys;
+  // Keys saved in the app fill in for missing server secrets on every other route.
+  env = await withStoredKeys(env, user);
 
   const synced = await handleSync(request, env, url, user, { json, fail, readLimited, securityHeaders: SECURITY_HEADERS });
   if (synced) return synced;

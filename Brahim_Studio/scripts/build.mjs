@@ -1,13 +1,22 @@
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { bundleAppJs } from './bundle.mjs';
 
-// Inlines worker/sync.js into one Worker module: drops its `export` keywords and
-// the matching import line in worker/index.js.
+// Builds one Worker module: local modules imported by worker/index.js
+// (`import { … } from './x.js';`) are inlined before it, without their exports.
 async function bundleWorker() {
-  const sync = (await readFile('worker/sync.js', 'utf8')).replace(/^export (async function|function|const)/gm, '$1');
-  const index = (await readFile('worker/index.js', 'utf8')).replace(/^import \{[^}]*\} from '\.\/sync\.js';\n/m, '');
-  if (/^import /m.test(index) || /^export (?!default|const _internals)/m.test(sync + index)) throw Error('Unexpected import/export left in Worker bundle');
-  return sync + '\n' + index;
+  let index = await readFile('worker/index.js', 'utf8');
+  const modules = [];
+  index = index.replace(/^import \{[^}]*\} from '\.\/([a-z-]+\.js)';\n/gm, (_, file) => { modules.push(file); return ''; });
+  const parts = [];
+  for (const file of modules) {
+    const src = (await readFile('worker/' + file, 'utf8'))
+      .replace(/^export (async function|function|const)/gm, '$1')
+      .replace(/^export \{[^}]*\};\n?/gm, '');
+    parts.push('// ---- worker/' + file + ' ----\n' + src);
+  }
+  const out = parts.join('\n') + '\n' + index;
+  if (/^import /m.test(out) || /^export (?!default|const _internals)/m.test(out)) throw Error('Unexpected import/export left in Worker bundle');
+  return out;
 }
 
 await rm('dist', { recursive: true, force: true });
