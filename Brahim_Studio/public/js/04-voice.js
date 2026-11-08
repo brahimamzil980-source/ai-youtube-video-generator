@@ -31,8 +31,9 @@ function stopSpeech() {
 
 function countVoice() {
   const n = $('voicetext').value.length;
-  const max = providerStatus?.media?.tts?.maxChars || 4000;
-  $('voicecount').textContent = n + ' حرف' + (n > max ? ' — الملف الاحترافي يقبل حتى ' + max + ' حرف في المرة الواحدة' : '');
+  const max = Math.min(3800, providerStatus?.media?.tts?.maxChars || 4000);
+  const parts = n > max ? splitNarration($('voicetext').value, max).length : 1;
+  $('voicecount').textContent = n + ' حرف' + (parts > 1 ? ' — سيُولَّد على ' + parts + ' أجزاء ويُدمج في ملف واحد' : '') + (n > LONG_TEXT_MAX_CHARS ? ' — الحد الأقصى ' + LONG_TEXT_MAX_CHARS + ' حرف' : '');
 }
 $('voicetext').oninput = countVoice;
 
@@ -125,38 +126,91 @@ function updateTtsState() {
 }
 onStatus(updateTtsState);
 
+// A long text is generated part by part. Finished parts stay in memory, so after a
+// failure or a stop, pressing generate again only pays for the remaining parts.
+let ttsJob = null;
+let ttsStop = false;
+
+function ttsSettings(text) {
+  return { text, voice: $('ttsvoice').value, language: $('voicelang').value, format: $('ttsformat').value, rate: $('voicerate').value, style: $('ttsstyle').value.trim() || null };
+}
+
+function ttsProgress(done, total) {
+  $('ttsprogress').classList.toggle('hidden', total < 2);
+  $('ttsprogress').max = total;
+  $('ttsprogress').value = done;
+}
+
 $('ttsgenerate').onclick = async () => {
   if (ttsBusy) return;
   const tts = providerStatus?.media?.tts;
   const text = $('voicetext').value.trim();
   if (!text) return toast('أدخل نص التعليق الصوتي');
-  if (text.length > tts.maxChars) return toast('النص أطول من ' + tts.maxChars + ' حرف. قسّمه إلى أجزاء.');
-  const format = $('ttsformat').value;
-  if (!confirmPaid(['• ملف صوتي ' + format.toUpperCase() + ' بنموذج ' + tts.model, '• الصوت ' + $('ttsvoice').value + ' · ' + text.length + ' حرف'])) return;
+  if (text.length > LONG_TEXT_MAX_CHARS) return toast('النص أطول من ' + LONG_TEXT_MAX_CHARS + ' حرف. قسّمه إلى ملفات.');
+  const settings = ttsSettings(text);
+  const key = JSON.stringify(settings);
+  if (!ttsJob || ttsJob.key !== key) {
+    const parts = splitNarration(text, Math.min(3800, tts.maxChars));
+    ttsJob = { key, settings, parts, audio: parts.map(() => null), model: tts.model };
+  }
+  const job = ttsJob;
+  const remaining = job.audio.filter((a) => !a).length;
+  const lines = ['• ملف صوتي ' + settings.format.toUpperCase() + ' بنموذج ' + tts.model, '• الصوت ' + settings.voice + ' · ' + text.length + ' حرف'];
+  if (job.parts.length > 1) lines.push('• النص طويل: ' + job.parts.length + ' أجزاء' + (remaining < job.parts.length ? '، باقي ' + remaining + ' (الأجزاء الجاهزة لن تُعاد)' : '') + '، ثم تُدمج في ملف واحد');
+  if (!confirmPaid(lines)) return;
+
   ttsBusy = true;
+  ttsStop = false;
   updateTtsState();
-  $('ttsstatus').textContent = 'جارٍ توليد الملف الصوتي…';
+  $('ttsstop').classList.toggle('hidden', job.parts.length < 2);
   try {
-    const response = await api('/api/tts', { text, voice: $('ttsvoice').value, language: $('voicelang').value, format, rate: $('voicerate').value, style: $('ttsstyle').value.trim() || null }, { binary: true });
-    const blob = await response.blob();
-    if (blob.size < 100) throw Error('وصل ملف صوتي فارغ.');
-    const mime = format === 'mp3' ? 'audio/mpeg' : 'audio/wav';
-    const model = response.headers.get('x-brahim-model') || tts.model;
-    const record = await putAsset(new Blob([blob], { type: mime }), { kind: 'audio', model });
+    for (let i = 0; i < job.parts.length; i++) {
+      if (job.audio[i]) continue;
+      if (ttsStop) throw Error('تم الإيقاف بعد ' + job.audio.filter(Boolean).length + ' من ' + job.parts.length + ' أجزاء. اضغط «توليد» لإكمال الباقي.');
+      ttsProgress(job.audio.filter(Boolean).length, job.parts.length);
+      $('ttsstatus').textContent = job.parts.length > 1 ? 'جارٍ توليد الجزء ' + (i + 1) + ' من ' + job.parts.length + '…' : 'جارٍ توليد الملف الصوتي…';
+      let response;
+      try {
+        response = await api('/api/tts', { ...settings, text: job.parts[i] }, { binary: true });
+      } catch (e) {
+        throw Error((job.parts.length > 1 ? 'توقف عند الجزء ' + (i + 1) + ': ' : '') + e.message + (job.parts.length > 1 && i > 0 ? ' الأجزاء الجاهزة محفوظة؛ اضغط «توليد» لإكمال الباقي فقط.' : ''));
+      }
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      if (bytes.length < 100) throw Error('وصل جزء صوتي فارغ.');
+      job.audio[i] = bytes;
+      job.model = response.headers.get('x-brahim-model') || job.model;
+    }
+    ttsProgress(job.parts.length, job.parts.length);
+    $('ttsstatus').textContent = job.parts.length > 1 ? 'جارٍ دمج ' + job.parts.length + ' أجزاء في ملف واحد…' : $('ttsstatus').textContent;
+    let merged;
+    try {
+      merged = mergeAudio(job.audio, settings.format);
+    } catch (e) {
+      throw Error('تعذر دمج الأجزاء: ' + e.message);
+    }
+    const mime = settings.format === 'mp3' ? 'audio/mpeg' : 'audio/wav';
+    const record = await putAsset(new Blob([merged], { type: mime }), { kind: 'audio', model: job.model });
     const title = $('voicetitle').value.trim() || text.slice(0, 40);
-    db.audio.push({ assetId: record.id, title, voice: $('ttsvoice').value, language: $('voicelang').value, format, mime, model, chars: text.length, createdAt: record.createdAt });
+    db.audio.push({ assetId: record.id, title, voice: settings.voice, language: settings.language, format: settings.format, mime, model: job.model, chars: text.length, parts: job.parts.length, createdAt: record.createdAt });
     save();
+    ttsJob = null;
     lastAudio = db.audio[db.audio.length - 1];
     $('ttsaudio').src = await assetUrl(record.id);
     $('ttsresult').classList.remove('hidden');
-    $('ttsstatus').textContent = 'تم توليد الملف (' + Math.round(blob.size / 1024) + ' KB) وحفظه في «ملفاتك الصوتية».';
+    $('ttsstatus').textContent = 'تم توليد الملف (' + Math.round(merged.length / 1024) + ' KB' + (job.parts.length > 1 ? '، ' + job.parts.length + ' أجزاء مدمجة' : '') + ') وحفظه في «ملفاتك الصوتية».';
     renderAudio();
   } catch (e) {
-    $('ttsstatus').textContent = e.message + ' لم تتم إعادة إرسال الطلب تلقائيًا.';
+    $('ttsstatus').textContent = e.message + ' لم تتم إعادة إرسال أي طلب تلقائيًا.';
   } finally {
     ttsBusy = false;
+    $('ttsstop').classList.add('hidden');
     updateTtsState();
   }
+};
+
+$('ttsstop').onclick = () => {
+  ttsStop = true;
+  $('ttsstatus').textContent = 'سيتوقف التوليد بعد الجزء الحالي…';
 };
 
 const audioFilename = (a) => 'brahim-' + (a.title || 'voice').replace(/[^\w؀-ۿ-]+/g, '-').slice(0, 40) + '-' + a.createdAt.slice(0, 10) + '.' + a.format;
@@ -169,7 +223,7 @@ async function renderAudio() {
   const cards = [];
   for (const a of db.audio.slice().reverse()) {
     const card = node('div', null, 'card');
-    card.append(node('h3', a.title), node('small', a.voice + ' · ' + a.language + ' · ' + a.format.toUpperCase() + ' · ' + a.chars + ' حرف'));
+    card.append(node('h3', a.title), node('small', a.voice + ' · ' + a.language + ' · ' + a.format.toUpperCase() + ' · ' + a.chars + ' حرف' + (a.parts > 1 ? ' · ' + a.parts + ' أجزاء' : '')));
     const url = await assetUrl(a.assetId);
     if (token !== audioRenderToken) return; // a newer render started
     if (url) {

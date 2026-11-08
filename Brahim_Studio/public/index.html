@@ -177,14 +177,14 @@ audio{width:100%;margin-top:12px}
 
   <section id="voice" class="hidden">
     <h1>صوت يعطي الحياة لقصتك.</h1>
-    <p>اكتب التعليق الصوتي، استمع بأصوات جهازك مجانًا، أو ولّد ملف MP3/WAV احترافي قابل للتحميل.</p>
+    <p>اكتب التعليق الصوتي، استمع بأصوات جهازك مجانًا، أو ولّد ملف MP3/WAV احترافي قابل للتحميل. النصوص الطويلة (حتى 40000 حرف) تُولَّد على أجزاء وتُدمج في ملف واحد.</p>
     <div class="layout">
       <div class="panel">
         <div class="eyebrow">VOICE STUDIO / 02</div>
         <label for="voicetitle">اسم التسجيل</label>
         <input id="voicetitle" placeholder="مثال: Drew — مشهد الزيادة">
         <label for="voicetext">نص التعليق الصوتي</label>
-        <textarea id="voicetext" maxlength="12000" placeholder="Paste your English narration here…" dir="auto"></textarea>
+        <textarea id="voicetext" maxlength="40000" placeholder="Paste your English narration here…" dir="auto"></textarea>
         <small id="voicecount">0 حرف</small>
         <div class="row">
           <div><label for="voicelang">اللغة</label><select id="voicelang"><option value="en">English</option><option value="ar">العربية</option><option value="fr">Français</option></select></div>
@@ -199,7 +199,8 @@ audio{width:100%;margin-top:12px}
         </div>
         <label for="ttsstyle">ملاحظات الأداء (اختياري، بالإنجليزية)</label>
         <input id="ttsstyle" maxlength="500" dir="ltr" placeholder="e.g. Warm, curious, slight smile, pause before the twist.">
-        <div class="actions"><button id="ttsgenerate" class="primary" disabled>توليد ملف صوتي ↗</button></div>
+        <div class="actions"><button id="ttsgenerate" class="primary" disabled>توليد ملف صوتي ↗</button><button id="ttsstop" class="secondary hidden">إيقاف بعد الجزء الحالي</button></div>
+        <progress id="ttsprogress" class="hidden" value="0" max="1"></progress>
         <p id="ttsstatus" class="hint" role="status" aria-live="polite"></p>
         <div id="ttsresult" class="hidden"><audio id="ttsaudio" controls preload="metadata"></audio><div class="actions"><button id="ttsdownload" class="secondary">تحميل الملف</button></div></div>
 
