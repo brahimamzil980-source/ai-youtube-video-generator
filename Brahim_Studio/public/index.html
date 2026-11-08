@@ -245,8 +245,17 @@ audio{width:100%;margin-top:12px}
       <div id="connectiongrid" class="statusgrid"><div><span>جارٍ التحقق…</span><span></span></div></div>
       <div class="actions"><button id="statusrefresh" class="secondary">تحديث الحالة</button></div>
       <p class="hint">«مهيّأ» يعني أن المفتاح موجود في الخادم فقط؛ أول نتيجة ناجحة هي التي تؤكد الرصيد والصلاحيات. حد الطلبات المؤقت حماية إضافية فقط: ضع حدًا شهريًا للإنفاق في لوحة OpenAI وAnthropic.</p>
+      <h2>المزامنة بين الأجهزة</h2>
+      <p id="syncstatus" class="hint" role="status" aria-live="polite">جارٍ التحقق…</p>
+      <p id="syncusage" class="hint"></p>
+      <div class="actions">
+        <button id="syncenable" class="primary hidden">تفعيل المزامنة على هذا الجهاز</button>
+        <button id="syncnow" class="secondary hidden">مزامنة الآن</button>
+        <button id="syncdisable" class="secondary hidden">إيقاف المزامنة هنا</button>
+      </div>
+      <p class="hint">فعّلها على iPhone وعلى الحاسوب. الشخصيات والمشاريع والنصوص تتزامن تلقائيًا، والصور والفيديو والصوت تُرفع للتخزين الخاص بموقعك وتُفتح من أي جهاز. إذا عدّلت نفس العنصر في جهازين في نفس الوقت، يبقى آخر تعديل.</p>
       <h2>نسخة احتياطية</h2>
-      <p>بياناتك محفوظة في المتصفح الحالي، ولا تتزامن بين الأجهزة. ملف النسخة الاحتياطية يتضمن الشخصيات والمشاريع والنصوص والصور المرجعية، ولا يتضمن ملفات الصور والفيديو والصوت المولّدة (حمّلها من مشاريعك).</p>
+      <p>بياناتك محفوظة في المتصفح الحالي (وفي السحابة إذا فعّلت المزامنة). ملف النسخة الاحتياطية يتضمن الشخصيات والمشاريع والنصوص والصور المرجعية، ولا يتضمن ملفات الصور والفيديو والصوت المولّدة (حمّلها من مشاريعك).</p>
       <button id="export" class="primary">تصدير بياناتي</button>
       <label for="import">استيراد نسخة احتياطية (يستبدل البيانات الحالية)</label>
       <input type="file" id="import" accept="application/json">

@@ -55,6 +55,9 @@ function migrate(data) {
     p.quality ??= 'medium';
     p.reference ??= '';
   }
+  out.sync = out.sync && typeof out.sync === 'object' ? out.sync : { enabled: false, cursor: 0, hashes: {}, lastChange: 0, pendingDeletes: [] };
+  out.sync.hashes ??= {};
+  out.sync.pendingDeletes ??= [];
   out.version = SCHEMA_VERSION;
   return out;
 }
@@ -63,9 +66,13 @@ let db;
 try { db = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { db = null; }
 db = migrate(db);
 
-function save() {
+const saveListeners = [];
+function onSave(fn) { saveListeners.push(fn); }
+function save({ fromSync = false } = {}) {
   try {
+    if (!fromSync) db.sync.lastChange = Date.now();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    saveListeners.forEach((fn) => fn(fromSync));
     return true;
   } catch {
     toast('مساحة التخزين غير كافية. صدّر بياناتك واحذف مرجعًا كبيرًا.');
@@ -89,6 +96,14 @@ function go(page) {
 document.querySelectorAll('nav button').forEach((b) => (b.onclick = () => go(b.dataset.page)));
 
 const newRequestId = () => crypto.randomUUID();
+
+let DEVICE_ID;
+try {
+  DEVICE_ID = localStorage.getItem('brahim-device-id') || crypto.randomUUID();
+  localStorage.setItem('brahim-device-id', DEVICE_ID);
+} catch {
+  DEVICE_ID = crypto.randomUUID();
+}
 
 // Calls a JSON API route. Throws an Error carrying the server's Arabic message.
 async function api(path, body, { binary = false } = {}) {

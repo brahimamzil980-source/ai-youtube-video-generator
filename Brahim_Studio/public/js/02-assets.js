@@ -18,8 +18,8 @@ async function assetTx(mode, fn) {
   const database = await openAssets();
   return new Promise((resolve, reject) => {
     const tx = database.transaction('assets', mode);
-    const result = fn(tx.objectStore('assets'));
-    tx.oncomplete = () => resolve(result?.result ?? result);
+    const request = fn(tx.objectStore('assets'));
+    tx.oncomplete = () => resolve(request instanceof IDBRequest ? request.result ?? null : request);
     tx.onerror = () => reject(tx.error || Error('تعذر حفظ الملف في المتصفح'));
     tx.onabort = () => reject(tx.error || Error('مساحة التخزين غير كافية لحفظ الملف'));
   });
@@ -36,8 +36,8 @@ const deleteAsset = (id) => assetTx('readwrite', (store) => store.delete(id));
 const objectUrls = new Map();
 async function assetUrl(id) {
   if (objectUrls.has(id)) return objectUrls.get(id);
-  const record = await getAsset(id);
-  if (!record) return null;
+  const record = await getAsset(id).catch(() => null);
+  if (!record) return db.sync.enabled ? '/api/assets/' + encodeURIComponent(id) : null;
   const url = URL.createObjectURL(record.blob);
   objectUrls.set(id, url);
   return url;
@@ -55,9 +55,24 @@ function downloadBlob(blob, filename) {
 }
 
 async function downloadAsset(id, filename) {
-  const record = await getAsset(id);
-  if (!record) return toast('الملف غير موجود في هذا المتصفح.');
-  downloadBlob(record.blob, filename);
+  const record = await getAsset(id).catch(() => null);
+  if (record) return downloadBlob(record.blob, filename);
+  if (!db.sync.enabled) return toast('الملف غير موجود في هذا المتصفح.');
+  try {
+    toast('جارٍ جلب الملف من التخزين السحابي…');
+    const r = await fetch('/api/assets/' + encodeURIComponent(id));
+    if (!r.ok) throw Error();
+    downloadBlob(await r.blob(), filename);
+  } catch {
+    toast('تعذر جلب الملف من التخزين السحابي.');
+  }
+}
+
+// Deletes a generated file on this device and, when sync is on, in cloud storage.
+async function forgetAsset(id) {
+  await deleteAsset(id).catch(() => {});
+  if (objectUrls.has(id)) { URL.revokeObjectURL(objectUrls.get(id)); objectUrls.delete(id); }
+  if (db.sync.enabled) { db.sync.pendingDeletes.push(id); save(); }
 }
 
 const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'audio/mpeg': 'mp3', 'audio/wav': 'wav', 'video/mp4': 'mp4' };

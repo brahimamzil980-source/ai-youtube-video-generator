@@ -163,13 +163,15 @@ const audioFilename = (a) => 'brahim-' + (a.title || 'voice').replace(/[^\w؀-ۿ
 
 $('ttsdownload').onclick = () => { if (lastAudio) downloadAsset(lastAudio.assetId, audioFilename(lastAudio)); };
 
+let audioRenderToken = 0;
 async function renderAudio() {
-  $('audiolist').replaceChildren();
-  if (!db.audio.length) $('audiolist').append(node('p', 'لا توجد ملفات صوتية مولّدة بعد.'));
+  const token = ++audioRenderToken;
+  const cards = [];
   for (const a of db.audio.slice().reverse()) {
     const card = node('div', null, 'card');
     card.append(node('h3', a.title), node('small', a.voice + ' · ' + a.language + ' · ' + a.format.toUpperCase() + ' · ' + a.chars + ' حرف'));
     const url = await assetUrl(a.assetId);
+    if (token !== audioRenderToken) return; // a newer render started
     if (url) {
       const player = node('audio');
       player.controls = true;
@@ -182,11 +184,13 @@ async function renderAudio() {
       if (!confirm('حذف هذا الملف الصوتي؟')) return;
       db.audio = db.audio.filter((x) => x !== a);
       save();
-      await deleteAsset(a.assetId).catch(() => {});
+      await forgetAsset(a.assetId);
       renderAudio();
     }));
-    $('audiolist').append(card);
+    cards.push(card);
   }
+  if (!cards.length) cards.push(node('p', 'لا توجد ملفات صوتية مولّدة بعد.'));
+  $('audiolist').replaceChildren(...cards);
 }
 
 onPage((page) => { if (page === 'voice') { renderScripts(); renderAudio(); } });

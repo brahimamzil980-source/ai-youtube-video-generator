@@ -33,7 +33,16 @@ Other changes: paid actions require a confirm dialog; client request IDs reject 
 
 Commands: `npm test` (13 mocked tests), `npm run check` (build + syntax), `npm run dev` (UI only, no provider calls), `BRAHIM_LIVE_LOCAL=1 npm run live` (real Worker on 127.0.0.1 with your exported keys).
 
-Still open: cloud sync (DB + object storage) for iPhone↔desktop; longer narrations than 4000 chars (split into parts); multi-turn chat; a host-side durable budget (KV/D1) instead of per-instance limits; iPhone Safari check on the real site.
+Still open: longer narrations than 4000 chars (split into parts); multi-turn chat; a host-side durable budget (KV/D1) instead of per-instance limits; iPhone Safari check on the real site.
+
+## 0b. Cross-device sync — 8 November 2026 (Claude, third session)
+
+Opt-in per device (Settings → «تفعيل المزامنة على هذا الجهاز»). Requires two bindings on the host: Cloudflare **D1** as `DB` and **R2** as `MEDIA`. `.openai/hosting.json` now declares `"d1": "DB", "r2": "MEDIA"`. That schema comes from secondary reporting on Sites, not official docs: if a deploy rejects it, bind the storage through the Sites UI/workflow with those names. Without the bindings the server reports `sync.available: false` and the app works exactly as before.
+
+- **Server** (`worker/sync.js`, inlined into the Worker by `scripts/build.mjs`): `GET /api/sync/status`, `GET /api/sync/pull?since=<rev>`, `POST /api/sync/push`, `PUT|GET|DELETE /api/assets/<uuid>`. Tables are created on first use. Every row is scoped to a SHA-256 of the authenticated user id. Last-writer-wins on the client `updatedAt`, with a per-owner increasing `rev` used as the pull cursor. Records over 800 KB are stored as R2 JSON. Media files are signature-checked and served with byte-range support (iPhone video). There is a quota (`SYNC_QUOTA_BYTES`, default 5 GB).
+- **Client** (`public/js/06-sync.js`): change detection by hashing each record against its last synced version, so every existing edit path is covered. Tombstones for deletes. Auto sync 4 s after a save, when the page becomes visible, and every 60 s. Local media are uploaded once; media missing on a device load from `/api/assets/<id>`. A backup file is downloaded before the first sync, and on the first sync the cloud copy wins conflicts. Video jobs are polled only by the device that started them.
+- **Limits:** whole-record last-writer-wins (two simultaneous edits of the same project: the later one stays). There is no offline queue beyond "push on next sync".
+- **Verified with mocks only:** `scripts/sync.test.mjs` (8 tests, SQLite-backed D1 mock + in-memory R2) and a two-browser Playwright run (desktop + iPhone 13) through the built Worker. It covered a character with image, project, image, narration, video with range playback, and delete propagation. Not yet run on real D1/R2.
 
 ## 1. Product intent and user context
 

@@ -31,6 +31,7 @@ onPage((page) => { if (page === 'settings') renderStorage(); });
 
 $('export').onclick = () => {
   const backup = { ...db, exportedAt: new Date().toISOString() };
+  delete backup.sync;
   downloadBlob(new Blob([JSON.stringify(backup)], { type: 'application/json' }), 'brahim-studio-backup-' + stamp() + '.json');
 };
 
@@ -63,6 +64,7 @@ $('import').onchange = async (e) => {
     if (!confirm('استبدال بيانات هذا المتصفح بالنسخة الاحتياطية؟ (الملفات المولّدة المحفوظة في المتصفح تبقى كما هي.)')) return;
     const previous = db;
     delete data.exportedAt;
+    data.sync = previous.sync; // keep this device's sync state; imported changes sync as new edits
     db = migrate(data);
     if (!save()) { db = previous; return; }
     resetProject();
