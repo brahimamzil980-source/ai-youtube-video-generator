@@ -49,7 +49,7 @@ function validateBackup(data) {
   const uniqueId = (id) => isStr(id, 100) && id.length > 0 && !ids.has(id) && ids.add(id);
   const charsOk = data.characters.every((c) => c && uniqueId(c.id) && isStr(c.name, 200) && isStr(c.description, 5000) && isImage(c.image));
   const projectsOk = data.projects.every((p) => p && uniqueId(p.id) && isStr(p.text, 20000) && isOptStr(p.title, 500) && isOptStr(p.brand, 100) && isOptStr(p.mode, 50) && isOptStr(p.ratio, 10) && isOptStr(p.rawPrompt, 20000) && isImage(p.reference) && (p.outputs == null || Array.isArray(p.outputs)) && (p.jobs == null || Array.isArray(p.jobs)));
-  const voiceOk = data.voiceScripts == null || (Array.isArray(data.voiceScripts) && data.voiceScripts.every((v) => v && uniqueId(v.id) && isStr(v.title, 500) && isStr(v.text, 20000) && isOptStr(v.language, 10) && isOptStr(String(v.rate ?? ''), 10)));
+  const voiceOk = data.voiceScripts == null || (Array.isArray(data.voiceScripts) && data.voiceScripts.every((v) => v && uniqueId(v.id) && isStr(v.title, 500) && isStr(v.text, 50000) && isOptStr(v.language, 10) && isOptStr(String(v.rate ?? ''), 10)));
   const audioOk = data.audio == null || Array.isArray(data.audio);
   return charsOk && projectsOk && voiceOk && audioOk;
 }

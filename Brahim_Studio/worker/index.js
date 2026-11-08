@@ -58,7 +58,7 @@ const MEDIA_BODY_LIMIT = 24_000_000;
 // Best-effort, per-instance spending guard. Worker instances do not share
 // memory, so this is NOT a hard budget: set a monthly budget/limit in the
 // provider dashboards as the real ceiling.
-const DEFAULT_RATE_LIMITS = { text: 30, image: 12, tts: 20, video: 4 }; // per 10 minutes
+const DEFAULT_RATE_LIMITS = { text: 30, image: 12, tts: 30, video: 4 }; // per 10 minutes
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 
 const OPENAI = 'https://api.openai.com/v1';

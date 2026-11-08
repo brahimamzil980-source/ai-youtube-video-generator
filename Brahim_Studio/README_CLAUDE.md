@@ -33,7 +33,7 @@ Other changes: paid actions require a confirm dialog; client request IDs reject 
 
 Commands: `npm test` (13 mocked tests), `npm run check` (build + syntax), `npm run dev` (UI only, no provider calls), `BRAHIM_LIVE_LOCAL=1 npm run live` (real Worker on 127.0.0.1 with your exported keys).
 
-Still open: longer narrations than 4000 chars (split into parts); multi-turn chat; a host-side durable budget (KV/D1) instead of per-instance limits; iPhone Safari check on the real site.
+Still open: multi-turn chat; a host-side durable budget (KV/D1) instead of per-instance limits; iPhone Safari check on the real site.
 
 ## 0b. Cross-device sync — 8 November 2026 (Claude, third session)
 
@@ -43,6 +43,20 @@ Opt-in per device (Settings → «تفعيل المزامنة على هذا ال
 - **Client** (`public/js/06-sync.js`): change detection by hashing each record against its last synced version, so every existing edit path is covered. Tombstones for deletes. Auto sync 4 s after a save, when the page becomes visible, and every 60 s. Local media are uploaded once; media missing on a device load from `/api/assets/<id>`. A backup file is downloaded before the first sync, and on the first sync the cloud copy wins conflicts. Video jobs are polled only by the device that started them.
 - **Limits:** whole-record last-writer-wins (two simultaneous edits of the same project: the later one stays). There is no offline queue beyond "push on next sync".
 - **Verified with mocks only:** `scripts/sync.test.mjs` (8 tests, SQLite-backed D1 mock + in-memory R2) and a two-browser Playwright run (desktop + iPhone 13) through the built Worker. It covered a character with image, project, image, narration, video with range playback, and delete propagation. Not yet run on real D1/R2.
+
+## 0c. Long narration — 8 November 2026 (Claude, fourth session)
+
+The voice studio accepts up to 40,000 characters. The provider limit (4,000 per request) is unchanged on the server. The client (`public/js/025-audio.js` + `04-voice.js`) does the rest:
+
+- Splits the text into parts of ≤3,800 characters, cutting at paragraph breaks first, then sentence ends (including `؟`), then commas or spaces.
+- Requests the parts one by one. A progress bar shows the count, and a "stop after the current part" button is available.
+- Joins the parts into one file:
+  - MP3: raw audio frames only. ID3v2/ID3v1 tags and the Xing/Info/VBRI header frame are stripped so the player computes the full duration.
+  - WAV: data chunks are concatenated with 300 ms of silence between parts and a new header. Streamed "unknown size" data chunks are handled.
+- Finished parts stay in memory. After a failure or a stop, pressing generate again with the same text and settings requests only the missing parts, and the confirmation shows how many remain. Reloading the page drops them.
+- The audio library shows the part count. The default `RATE_LIMIT_TTS` was raised to 30 per 10 minutes so an 11-part file fits.
+
+Verified: `scripts/audio.test.mjs` (7 tests). Real ffmpeg MP3s (24 kHz mono CBR and 44.1 kHz stereo VBR) and WAVs were joined and checked with ffprobe: correct duration, 0 decode errors. A Playwright iPhone run on a mocked provider covered a 4-part text with a forced failure on part 2, then a resume that requested only the 3 missing parts and played the joined file. Not verified with real OpenAI audio: the joining assumes OpenAI returns standard MP3/WAV, which still needs a live check.
 
 ## 1. Product intent and user context
 

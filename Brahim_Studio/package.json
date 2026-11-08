@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node --test scripts/api.test.mjs scripts/sync.test.mjs",
+    "test": "node --test scripts/api.test.mjs scripts/sync.test.mjs scripts/audio.test.mjs",
     "dev": "node scripts/dev.mjs",
     "live": "node scripts/live-local.mjs",
     "smoke": "node scripts/smoke.mjs",
