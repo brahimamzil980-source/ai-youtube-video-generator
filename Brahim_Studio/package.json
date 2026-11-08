@@ -5,6 +5,9 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "test": "node --test scripts/api.test.mjs",
-    "dev": "node scripts/dev.mjs"
+    "dev": "node scripts/dev.mjs",
+    "live": "node scripts/live-local.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "check": "node scripts/build.mjs && node --check dist/server/index.js && node -e \"import('./scripts/bundle.mjs').then(async m=>{new Function(await m.bundleAppJs());console.log('app.js syntax ok')})\""
   }
 }

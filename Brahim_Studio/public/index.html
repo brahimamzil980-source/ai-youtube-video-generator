@@ -1,3 +1,260 @@
-<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Brahim Studio</title><style>
-:root{color-scheme:dark;font-family:Arial,sans-serif;background:#0d1014;color:#edf1f4}*{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}button{cursor:pointer}aside{position:fixed;right:0;top:0;bottom:0;width:220px;border-left:1px solid #282e36;padding:28px 20px;background:#11151b}.logo{font-size:24px;font-weight:800;direction:ltr;text-align:right}.dot{color:#b5f36c}small{color:#929ba8}nav{display:grid;gap:8px;margin-top:50px}nav button{background:none;border:0;color:#9da7b4;text-align:right;padding:15px;border-radius:10px}nav button.active{background:#26321f;color:#c1fa88}.private{position:absolute;bottom:28px;color:#9da7b4;font-size:13px}main{margin-right:220px;padding:32px 5vw;max-width:1600px}header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #282e36;padding-bottom:24px}.badge{border:1px solid #35442c;color:#b5f36c;padding:8px 12px;border-radius:30px;font-size:12px}h1{font-size:38px;margin:40px 0 12px}p{color:#9da7b4;line-height:1.8}.layout{display:grid;grid-template-columns:1.15fr 1fr;gap:24px;margin-top:30px}.panel{border:1px solid #2a313a;background:#151a21;padding:25px;border-radius:18px}label{display:block;font-size:13px;color:#b4bdc8;margin:22px 0 10px}input,select,textarea{width:100%;background:#0d1117;color:#e8edf1;border:1px solid #333b46;border-radius:10px;padding:13px}textarea{resize:vertical;min-height:160px;line-height:1.7}.row{display:flex;gap:12px}.row>*{flex:1}.primary{background:#b5f36c;color:#18200f;border:0;padding:15px 22px;border-radius:10px;font-weight:bold}.secondary{background:#262e38;color:#eff3f5;border:1px solid #3a4553;padding:12px;border-radius:10px}.actions{display:flex;gap:10px;margin-top:20px}.preview{min-height:250px;background:radial-gradient(ellipse at 50% 90%,#304728,transparent 65%),#10151b;display:grid;place-items:center;text-align:center;border:1px dashed #3b4a39;border-radius:12px;padding:30px}.orb{font-size:68px;color:#b5f36c}.hint{font-size:12px;line-height:1.8;color:#9da7b4}.hidden{display:none!important}.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px;margin-top:25px}.card{border:1px solid #303945;background:#151a21;border-radius:14px;padding:20px;overflow:hidden}.card img{width:100%;height:180px;object-fit:contain;background:#0d1014;border-radius:8px}.card h3{margin-bottom:8px}.card button{margin:5px 0}.eyebrow{color:#b5f36c;font-size:12px;letter-spacing:2px}#toast{position:fixed;bottom:25px;left:25px;background:#b5f36c;color:#17220f;padding:15px 24px;border-radius:12px;display:none;z-index:3}pre{white-space:pre-wrap;line-height:1.8;font-family:inherit;font-size:14px;direction:ltr;text-align:left}a{color:#b5f36c}@media(max-width:800px){aside{position:static;width:100%;padding:18px;border-bottom:1px solid #303945}.logo{text-align:center}nav{display:flex;margin-top:18px;justify-content:center}nav button{padding:10px;font-size:13px}.private{display:none}main{margin:0;padding:22px}header{font-size:12px}h1{font-size:29px;margin-top:28px}.layout{grid-template-columns:1fr}.row{flex-wrap:wrap}.panel{padding:20px}}
-</style><aside><div class="logo">bra<span class="dot">h</span>im studio<span class="dot">.</span></div><nav><button class="active" data-page="create">✧ استوديو الإبداع</button><button data-page="assistant">✦ مساعد الكتابة</button><button data-page="voice">♫ استوديو الصوت</button><button data-page="characters">◉ شخصياتي</button><button data-page="projects">▦ مشاريعي</button><button data-page="settings">⚙ الاتصال والبيانات</button></nav><div class="private">● مساحة خاصة بك وحدك</div></aside><main><header><span>مساحتك لصناعة القصص البصرية</span><span class="badge">PRIVATE WORKSPACE</span></header><section id="create"><h1>فكرة اليوم. قصتك القادمة.</h1><p>حضّر المشهد، اختر شخصيتك، وابنِ مشروعك القادم.</p><div class="layout"><div class="panel"><div class="eyebrow">CREATIVE WORKSPACE / 01</div><label>نوع المشروع</label><div class="row"><select id="mode"><option>صورة</option><option>فيديو من صورة</option><option>فيديو من وصف</option></select><select id="brand"><option>Origins Drawn</option><option>Little Hearts</option><option>مشروع شخصي</option></select></div><label>الشخصية المرجعية</label><select id="character"></select><label>صف المشهد</label><textarea id="prompt" placeholder="مثال: Drew داخل مقهى مزدحم، ينظر بتردد إلى فاتورة مرتفعة، أصدقاؤه يتحدثون في الخلفية..."></textarea><div class="row"><div><label>المقاس</label><select id="ratio"><option>9:16</option><option>16:9</option><option>1:1</option></select></div><div><label>المدة</label><select id="duration"><option>5 ثوانٍ</option><option>10 ثوانٍ</option><option>15 ثانية</option></select></div></div><label>صورة مرجعية للمشهد (اختياري)</label><input type="file" accept="image/*" id="reference"><div class="actions"><button class="primary" id="prepare">تحضير المشروع ↗</button><button class="secondary" id="example">جرّب مثالًا</button></div><p class="hint">التحضير يحفظ المشروع ويجهّز البرومبت. توليد الوسائط غير متصل حاليًا.</p></div><div class="panel"><div class="preview" id="preview"><div><div class="orb">✧</div><h2>هنا تبدأ القصة</h2><p>مساحة لمراجعك وبرومبت المشهد</p><small>لا توجد نتائج مولّدة بعد</small></div></div><div id="output" class="hidden"><h3>البرومبت الجاهز</h3><pre id="result"></pre><button id="copy" class="secondary">نسخ البرومبت</button></div><p class="hint">حفظ الشخصيات والمشاريع يتم في هذا المتصفح. صدّر نسخة احتياطية للحفاظ على عملك.</p></div></div></section><section id="assistant" class="hidden"><h1>فكرتك، مع مساعدك المفضّل.</h1><p>جهّز السكربت والبرومبت والتعليق الصوتي باستخدام OpenAI أو Claude.</p><div class="layout"><div class="panel"><div class="eyebrow">AI WRITING / 03</div><label for="aiprovider">المساعد</label><select id="aiprovider"><option value="openai">OpenAI — نماذج GPT</option><option value="anthropic">Claude — Anthropic</option></select><p id="aiconnection" role="status" aria-live="polite">جارٍ التحقق من الاتصال…</p><button id="airefresh" class="secondary">تحديث حالة الربط</button><label for="aitask">نوع المساعدة</label><select id="aitask"><option value="script">كتابة سكربت فيديو</option><option value="prompt">تحسين برومبت المشهد</option><option value="narration">كتابة تعليق صوتي</option><option value="general">طلب حر</option></select><label for="aibrand">المشروع</label><select id="aibrand"><option>Origins Drawn</option><option>Little Hearts</option><option>مشروع شخصي</option></select><label for="aiinput">طلبك</label><textarea id="aiinput" maxlength="12000" dir="auto" placeholder="مثال: Write a 45-second English story about Drew getting a raise but still feeling broke. Include a strong hook and a question at the end."></textarea><p class="hint">عند الضغط على إرسال، سيُرسل هذا النص واسم المشروع ونوع المهمة إلى المزوّد المختار. لن تُرسل صورك أو مشاريعك المحفوظة. استخدام API قد يستهلك رصيد حساب المزوّد.</p><button id="aisend" class="primary" disabled>إرسال للمساعد ↗</button><p id="aistatus" role="status" aria-live="polite" class="hint"></p></div><div class="panel"><h2>جواب المساعد</h2><pre id="aianswer" dir="auto">الجواب الحقيقي سيظهر هنا بعد تفعيل الربط وإرسال طلبك.</pre><div class="actions"><button id="aicopy" class="secondary" disabled>نسخ الجواب</button><button id="aitoscene" class="secondary" disabled>إلى المشهد</button><button id="aitovoice" class="secondary" disabled>إلى الصوت</button></div><p class="hint">هذا ربط API مستقل. لا يستورد محادثاتك من ChatGPT أو Claude. الربط غير مفعّل حتى تُضبط بيانات المزوّد في الخادم.</p><div class="card"><h3>تفعيل الاتصال</h3><p>OpenAI: ثبّت إضافة OpenAI Developers في ChatGPT لإعداد مفتاح API بأمان.</p><p>Claude: يحتاج مفتاح Anthropic API محفوظًا كسرّ في إعدادات الخادم. لا تضع المفاتيح في النصوص أو المحادثة.</p><small>حالة «مهيّأ» تعني وجود مفتاح في الخادم؛ أول إجابة ناجحة تؤكد صلاحية الاتصال.</small></div></div></div></section><section id="voice" class="hidden"><h1>صوت يعطي الحياة لقصتك.</h1><p>اكتب التعليق الصوتي، اختر صوتًا متاحًا على جهازك، واستمع إلى المعاينة.</p><div class="layout"><div class="panel"><div class="eyebrow">VOICE STUDIO / 02</div><label for="voicetitle">اسم التسجيل</label><input id="voicetitle" placeholder="مثال: Drew — مشهد الزيادة"><label for="voicetext">نص التعليق الصوتي</label><textarea id="voicetext" maxlength="12000" placeholder="Paste your English narration here…" dir="auto"></textarea><small id="voicecount">0 حرف</small><div class="row"><div><label for="voicelang">اللغة</label><select id="voicelang"><option value="en">English</option><option value="ar">العربية</option><option value="fr">Français</option></select></div><div><label for="voicerate">سرعة القراءة</label><select id="voicerate"><option value="0.85">0.85× — هادئة</option><option value="1" selected>1× — عادية</option><option value="1.15">1.15× — سريعة</option></select></div></div><label for="voicechoice">أصوات الجهاز</label><select id="voicechoice"></select><div class="actions"><button id="speak" class="primary">▶ استمع للمعاينة</button><button id="stopvoice" class="secondary" disabled>إيقاف</button></div><p id="voicestatus" role="status" aria-live="polite" class="hint"></p><div class="actions"><button id="savevoice" class="secondary">حفظ النص والإعدادات</button><button id="downloadscript" class="secondary">تحميل النص TXT</button></div></div><div class="panel"><div class="preview"><div><div class="orb">♫</div><h2>معاينة بأصوات جهازك</h2><p>الأصوات واللغات المتاحة كتختلف حسب الجهاز والمتصفح.</p><span class="badge">تصدير MP3 غير متصل</span></div></div><p class="hint">المعاينة تستخدم خدمة القراءة في المتصفح أو نظام الجهاز، وقد تعتمد على اتصال بالإنترنت حسب الصوت. لا تنشئ ملفًا صوتيًا قابلًا للتحميل. يلزم مزوّد صوت متصل لتصدير MP3؛ لن يُطلب منك إدخال مفتاح API هنا.</p><h3>نصوصك المحفوظة</h3><div id="voicesaved"></div></div></div></section><section id="characters" class="hidden"><h1>شخصياتك، في كل قصة.</h1><p>أضف الصورة الأصلية والوصف الثابت لاستخدامهما كمرجع. ثبات التوليد يعتمد على المزوّد.</p><div class="panel"><div class="row"><input id="charname" placeholder="اسم الشخصية"><input type="file" id="charfile" accept="image/*"></div><label>الوصف الثابت للشخصية</label><textarea id="chardesc" placeholder="الملامح، الملابس، ألوان الشخصية وأسلوب الرسم..."></textarea><button id="addchar" class="primary">حفظ الشخصية</button></div><div id="charcards" class="cards"></div></section><section id="projects" class="hidden"><h1>مشاريعك.</h1><p>المشاهد المحضّرة والمراجع والنتائج التي ترفعها بنفسك.</p><div id="projectcards" class="cards"></div></section><section id="settings" class="hidden"><h1>مساحتك تحت سيطرتك.</h1><div class="panel"><h2>اتصال التوليد</h2><span class="badge">غير متصل</span><p>هذه النسخة تحضّر المشاريع والبرومبتات وتحفظ المراجع. لتوليد الصور والفيديو مباشرة، يلزم ربط خدمة توليد عبر خادم آمن. لا تضع مفاتيح API في وصف المشهد.</p><h2>نسخة احتياطية</h2><p>بياناتك محفوظة في المتصفح الحالي، ولا تتزامن بين الأجهزة. ملف النسخة الاحتياطية يتضمن الصور المرجعية.</p><button id="export" class="primary">تصدير بياناتي</button><label>استيراد نسخة احتياطية (يستبدل البيانات الحالية)</label><input type="file" id="import" accept="application/json"></div></section></main><div id="toast"></div><script src="app.js"></script></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0d1014">
+<title>Brahim Studio</title>
+<style>
+:root{color-scheme:dark;font-family:Arial,sans-serif;background:#0d1014;color:#edf1f4}
+*{box-sizing:border-box}
+body{margin:0;background:#0d1014}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer;touch-action:manipulation}
+button:disabled{opacity:.5;cursor:not-allowed}
+aside{position:fixed;right:0;top:0;bottom:0;width:220px;border-left:1px solid #282e36;padding:28px 20px;background:#11151b}
+.logo{font-size:24px;font-weight:800;direction:ltr;text-align:right}
+.dot{color:#b5f36c}
+small{color:#929ba8}
+nav{display:grid;gap:8px;margin-top:50px}
+nav button{background:none;border:0;color:#9da7b4;text-align:right;padding:15px;border-radius:10px}
+nav button.active{background:#26321f;color:#c1fa88}
+.private{position:absolute;bottom:28px;color:#9da7b4;font-size:13px}
+main{margin-right:220px;padding:32px 5vw;max-width:1600px}
+header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #282e36;padding-bottom:24px;gap:12px}
+.badge{border:1px solid #35442c;color:#b5f36c;padding:8px 12px;border-radius:30px;font-size:12px;white-space:nowrap}
+.badge.off{border-color:#4a3a2c;color:#f3c36c}
+h1{font-size:38px;margin:40px 0 12px}
+p{color:#9da7b4;line-height:1.8}
+.layout{display:grid;grid-template-columns:1.15fr 1fr;gap:24px;margin-top:30px}
+.panel{border:1px solid #2a313a;background:#151a21;padding:25px;border-radius:18px;min-width:0}
+label{display:block;font-size:13px;color:#b4bdc8;margin:22px 0 10px}
+input,select,textarea{width:100%;background:#0d1117;color:#e8edf1;border:1px solid #333b46;border-radius:10px;padding:13px;font-size:16px}
+textarea{resize:vertical;min-height:160px;line-height:1.7}
+.row{display:flex;gap:12px}
+.row>*{flex:1;min-width:0}
+.primary{background:#b5f36c;color:#18200f;border:0;padding:15px 22px;border-radius:10px;font-weight:bold}
+.secondary{background:#262e38;color:#eff3f5;border:1px solid #3a4553;padding:12px;border-radius:10px}
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.preview{min-height:250px;background:radial-gradient(ellipse at 50% 90%,#304728,transparent 65%),#10151b;display:grid;place-items:center;text-align:center;border:1px dashed #3b4a39;border-radius:12px;padding:20px}
+.preview img,.preview video{max-width:100%;max-height:420px;border-radius:8px;display:block;margin:auto}
+.orb{font-size:68px;color:#b5f36c}
+.hint{font-size:12px;line-height:1.8;color:#9da7b4}
+.hidden{display:none!important}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px;margin-top:25px}
+.card{border:1px solid #303945;background:#151a21;border-radius:14px;padding:20px;overflow:hidden;margin-top:12px}
+.cards .card{margin-top:0}
+.card img,.card video{width:100%;height:180px;object-fit:contain;background:#0d1014;border-radius:8px}
+.card h3{margin-bottom:8px;overflow-wrap:anywhere}
+.card button{margin:5px 0}
+.eyebrow{color:#b5f36c;font-size:12px;letter-spacing:2px}
+#toast{position:fixed;bottom:25px;left:25px;right:auto;max-width:calc(100vw - 50px);background:#b5f36c;color:#17220f;padding:15px 24px;border-radius:12px;display:none;z-index:3}
+pre{white-space:pre-wrap;line-height:1.8;font-family:inherit;font-size:14px;direction:ltr;text-align:left;overflow-wrap:anywhere}
+a{color:#b5f36c}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:14px}
+.asset{border:1px solid #303945;border-radius:10px;padding:8px;background:#10151b}
+.asset img,.asset video{width:100%;height:150px;object-fit:contain;background:#0d1014;border-radius:6px;display:block}
+.asset small{display:block;margin:6px 0}
+.asset button{width:100%;margin-top:4px;padding:8px}
+.job{border:1px solid #3b4a39;border-radius:10px;padding:10px;margin-top:10px;font-size:13px;color:#b4bdc8}
+progress{width:100%;accent-color:#b5f36c}
+audio{width:100%;margin-top:12px}
+.statusgrid{display:grid;gap:8px;margin-top:12px}
+.statusgrid div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #262e38;padding:8px 0;font-size:14px}
+.statusgrid span:last-child{direction:ltr;text-align:left;color:#b4bdc8}
+.error{color:#f39a8c}
+@media(max-width:800px){
+  aside{position:sticky;top:0;z-index:2;width:100%;padding:12px 12px 8px;border-bottom:1px solid #303945;border-left:0}
+  .logo{text-align:center;font-size:20px}
+  nav{display:flex;margin-top:10px;justify-content:flex-start;overflow-x:auto;gap:4px;-webkit-overflow-scrolling:touch}
+  nav button{padding:10px 12px;font-size:13px;white-space:nowrap;flex:0 0 auto}
+  .private{display:none}
+  main{margin:0;padding:18px 16px 40px}
+  header{font-size:12px}
+  h1{font-size:28px;margin-top:24px}
+  .layout{grid-template-columns:1fr}
+  .row{flex-wrap:wrap}
+  .row>*{flex:1 1 140px}
+  .panel{padding:18px}
+  .actions>button{flex:1 1 auto}
+}
+</style>
+</head>
+<body>
+<aside>
+  <div class="logo">bra<span class="dot">h</span>im studio<span class="dot">.</span></div>
+  <nav aria-label="الأقسام">
+    <button class="active" data-page="create">✧ استوديو الإبداع</button>
+    <button data-page="assistant">✦ مساعد الكتابة</button>
+    <button data-page="voice">♫ استوديو الصوت</button>
+    <button data-page="characters">◉ شخصياتي</button>
+    <button data-page="projects">▦ مشاريعي</button>
+    <button data-page="settings">⚙ الاتصال والبيانات</button>
+  </nav>
+  <div class="private">● مساحة خاصة بك وحدك</div>
+</aside>
+<main>
+  <header><span>مساحتك لصناعة القصص البصرية</span><span class="badge">PRIVATE WORKSPACE</span></header>
+
+  <section id="create">
+    <h1>فكرة اليوم. قصتك القادمة.</h1>
+    <p>حضّر المشهد، اختر شخصيتك، وولّد الصورة أو الفيديو.</p>
+    <div class="layout">
+      <div class="panel">
+        <div class="eyebrow">CREATIVE WORKSPACE / 01</div>
+        <p id="currentproject" class="hint">مشروع جديد</p>
+        <label for="mode">نوع المشروع</label>
+        <div class="row">
+          <select id="mode">
+            <option value="image">صورة</option>
+            <option value="i2v">فيديو من صورة</option>
+            <option value="t2v">فيديو من وصف</option>
+          </select>
+          <select id="brand" aria-label="المشروع">
+            <option>Origins Drawn</option><option>Little Hearts</option><option>مشروع شخصي</option>
+          </select>
+        </div>
+        <label for="character">الشخصية المرجعية</label>
+        <select id="character"></select>
+        <label for="prompt">صف المشهد</label>
+        <textarea id="prompt" dir="auto" maxlength="6000" placeholder="مثال: Drew داخل مقهى مزدحم، ينظر بتردد إلى فاتورة مرتفعة، أصدقاؤه يتحدثون في الخلفية..."></textarea>
+        <div class="row">
+          <div><label for="ratio">المقاس</label><select id="ratio"><option>9:16</option><option>16:9</option><option>1:1</option></select></div>
+          <div id="durationwrap"><label for="duration">المدة</label><select id="duration"><option value="4">4 ثوانٍ</option><option value="8" selected>8 ثوانٍ</option><option value="12">12 ثانية</option></select></div>
+          <div id="qualitywrap"><label for="quality">جودة الصورة</label><select id="quality"><option value="low">منخفضة (أرخص)</option><option value="medium" selected>متوسطة</option><option value="high">عالية (أغلى)</option></select></div>
+        </div>
+        <label for="reference">صورة مرجعية للمشهد (اختياري — PNG أو JPEG أو WEBP)</label>
+        <input type="file" accept="image/png,image/jpeg,image/webp" id="reference">
+        <div class="actions">
+          <button class="primary" id="generate">توليد ↗</button>
+          <button class="secondary" id="prepare">حفظ وتحضير البرومبت</button>
+          <button class="secondary" id="newproject">مشروع جديد</button>
+          <button class="secondary" id="example">جرّب مثالًا</button>
+        </div>
+        <p id="genstatus" class="hint" role="status" aria-live="polite"></p>
+        <p id="genhint" class="hint">التوليد يستعمل رصيد حساب OpenAI ويطلب تأكيدك قبل كل عملية.</p>
+      </div>
+      <div class="panel">
+        <div class="preview" id="preview"><div><div class="orb">✧</div><h2>هنا تبدأ القصة</h2><p>مساحة لمراجعك ونتائجك</p><small>لا توجد نتائج مولّدة بعد</small></div></div>
+        <div id="jobs"></div>
+        <div id="outputs" class="gallery"></div>
+        <div id="output" class="hidden"><h3>البرومبت الجاهز</h3><pre id="result"></pre><button id="copy" class="secondary">نسخ البرومبت</button></div>
+        <p class="hint">الشخصيات والمشاريع محفوظة في هذا المتصفح، والصور والفيديوهات والصوت المولّد محفوظة في قاعدة بيانات هذا المتصفح (IndexedDB). حمّل النتائج المهمة على جهازك.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="assistant" class="hidden">
+    <h1>فكرتك، مع مساعدك المفضّل.</h1>
+    <p>جهّز السكربت والبرومبت والتعليق الصوتي باستخدام OpenAI أو Claude.</p>
+    <div class="layout">
+      <div class="panel">
+        <div class="eyebrow">AI WRITING / 03</div>
+        <label for="aiprovider">المساعد</label>
+        <select id="aiprovider"><option value="openai">OpenAI — نماذج GPT</option><option value="anthropic">Claude — Anthropic</option></select>
+        <p id="aiconnection" role="status" aria-live="polite">جارٍ التحقق من الاتصال…</p>
+        <button id="airefresh" class="secondary">تحديث حالة الربط</button>
+        <label for="aitask">نوع المساعدة</label>
+        <select id="aitask"><option value="script">كتابة سكربت فيديو</option><option value="prompt">تحسين برومبت المشهد</option><option value="narration">كتابة تعليق صوتي</option><option value="general">طلب حر</option></select>
+        <label for="aibrand">المشروع</label>
+        <select id="aibrand"><option>Origins Drawn</option><option>Little Hearts</option><option>مشروع شخصي</option></select>
+        <label for="aiinput">طلبك</label>
+        <textarea id="aiinput" maxlength="12000" dir="auto" placeholder="مثال: Write a 45-second English story about Drew getting a raise but still feeling broke. Include a strong hook and a question at the end."></textarea>
+        <p class="hint">عند الضغط على إرسال، سيُرسل هذا النص واسم المشروع ونوع المهمة إلى المزوّد المختار. لن تُرسل صورك أو مشاريعك المحفوظة. استخدام API قد يستهلك رصيد حساب المزوّد.</p>
+        <button id="aisend" class="primary" disabled>إرسال للمساعد ↗</button>
+        <p id="aistatus" role="status" aria-live="polite" class="hint"></p>
+      </div>
+      <div class="panel">
+        <h2>جواب المساعد</h2>
+        <pre id="aianswer" dir="auto">الجواب سيظهر هنا بعد إرسال طلبك.</pre>
+        <div class="actions"><button id="aicopy" class="secondary" disabled>نسخ الجواب</button><button id="aitoscene" class="secondary" disabled>إلى المشهد</button><button id="aitovoice" class="secondary" disabled>إلى الصوت</button></div>
+        <p class="hint">هذا ربط API مستقل. لا يستورد محادثاتك من ChatGPT أو Claude.</p>
+        <div class="card"><h3>تفعيل الاتصال</h3><p>المفاتيح تُضبط فقط كأسرار (Secrets) في إعدادات الخادم: <code>OPENAI_API_KEY</code> و<code>ANTHROPIC_API_KEY</code>. لا تضع المفاتيح في النصوص أو المحادثة.</p><small>حالة «مهيّأ» تعني وجود مفتاح في الخادم؛ أول إجابة ناجحة تؤكد صلاحية الاتصال.</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="voice" class="hidden">
+    <h1>صوت يعطي الحياة لقصتك.</h1>
+    <p>اكتب التعليق الصوتي، استمع بأصوات جهازك مجانًا، أو ولّد ملف MP3/WAV احترافي قابل للتحميل.</p>
+    <div class="layout">
+      <div class="panel">
+        <div class="eyebrow">VOICE STUDIO / 02</div>
+        <label for="voicetitle">اسم التسجيل</label>
+        <input id="voicetitle" placeholder="مثال: Drew — مشهد الزيادة">
+        <label for="voicetext">نص التعليق الصوتي</label>
+        <textarea id="voicetext" maxlength="12000" placeholder="Paste your English narration here…" dir="auto"></textarea>
+        <small id="voicecount">0 حرف</small>
+        <div class="row">
+          <div><label for="voicelang">اللغة</label><select id="voicelang"><option value="en">English</option><option value="ar">العربية</option><option value="fr">Français</option></select></div>
+          <div><label for="voicerate">سرعة القراءة</label><select id="voicerate"><option value="0.85">0.85× — هادئة</option><option value="1" selected>1× — عادية</option><option value="1.15">1.15× — سريعة</option></select></div>
+        </div>
+
+        <h3>ملف صوتي احترافي (OpenAI)</h3>
+        <p id="ttsconnection" class="hint" role="status">جارٍ التحقق من الاتصال…</p>
+        <div class="row">
+          <div><label for="ttsvoice">الصوت</label><select id="ttsvoice"></select></div>
+          <div><label for="ttsformat">الصيغة</label><select id="ttsformat"><option value="mp3">MP3</option><option value="wav">WAV</option></select></div>
+        </div>
+        <label for="ttsstyle">ملاحظات الأداء (اختياري، بالإنجليزية)</label>
+        <input id="ttsstyle" maxlength="500" dir="ltr" placeholder="e.g. Warm, curious, slight smile, pause before the twist.">
+        <div class="actions"><button id="ttsgenerate" class="primary" disabled>توليد ملف صوتي ↗</button></div>
+        <p id="ttsstatus" class="hint" role="status" aria-live="polite"></p>
+        <div id="ttsresult" class="hidden"><audio id="ttsaudio" controls preload="metadata"></audio><div class="actions"><button id="ttsdownload" class="secondary">تحميل الملف</button></div></div>
+
+        <h3>معاينة مجانية بأصوات الجهاز</h3>
+        <label for="voicechoice">أصوات الجهاز</label>
+        <select id="voicechoice"></select>
+        <div class="actions"><button id="speak" class="secondary">▶ استمع للمعاينة</button><button id="stopvoice" class="secondary" disabled>إيقاف</button></div>
+        <p id="voicestatus" role="status" aria-live="polite" class="hint"></p>
+        <div class="actions"><button id="savevoice" class="secondary">حفظ النص والإعدادات</button><button id="downloadscript" class="secondary">تحميل النص TXT</button></div>
+      </div>
+      <div class="panel">
+        <h3>ملفاتك الصوتية</h3>
+        <div id="audiolist"></div>
+        <h3>نصوصك المحفوظة</h3>
+        <div id="voicesaved"></div>
+        <p class="hint">معاينة الجهاز لا تنشئ ملفًا قابلًا للتحميل. الملف الاحترافي يُولَّد بصوت ذكاء اصطناعي جاهز من OpenAI (وليس صوتًا بشريًا حقيقيًا)، ويُحفظ في هذا المتصفح.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="characters" class="hidden">
+    <h1>شخصياتك، في كل قصة.</h1>
+    <p>أضف الصورة الأصلية والوصف الثابت. عند توليد صورة، تُرسل صورة الشخصية كمرجع للمزوّد. ثبات الشكل يعتمد على المزوّد.</p>
+    <div class="panel">
+      <div class="row"><input id="charname" placeholder="اسم الشخصية" aria-label="اسم الشخصية"><input type="file" id="charfile" accept="image/png,image/jpeg,image/webp" aria-label="صورة الشخصية"></div>
+      <label for="chardesc">الوصف الثابت للشخصية</label>
+      <textarea id="chardesc" placeholder="الملامح، الملابس، ألوان الشخصية وأسلوب الرسم..."></textarea>
+      <button id="addchar" class="primary">حفظ الشخصية</button>
+    </div>
+    <div id="charcards" class="cards"></div>
+  </section>
+
+  <section id="projects" class="hidden">
+    <h1>مشاريعك.</h1>
+    <p>المشاهد المحضّرة والمراجع والنتائج المولّدة.</p>
+    <div id="projectcards" class="cards"></div>
+  </section>
+
+  <section id="settings" class="hidden">
+    <h1>مساحتك تحت سيطرتك.</h1>
+    <div class="panel">
+      <h2>حالة الاتصال</h2>
+      <div id="connectiongrid" class="statusgrid"><div><span>جارٍ التحقق…</span><span></span></div></div>
+      <div class="actions"><button id="statusrefresh" class="secondary">تحديث الحالة</button></div>
+      <p class="hint">«مهيّأ» يعني أن المفتاح موجود في الخادم فقط؛ أول نتيجة ناجحة هي التي تؤكد الرصيد والصلاحيات. حد الطلبات المؤقت حماية إضافية فقط: ضع حدًا شهريًا للإنفاق في لوحة OpenAI وAnthropic.</p>
+      <h2>نسخة احتياطية</h2>
+      <p>بياناتك محفوظة في المتصفح الحالي، ولا تتزامن بين الأجهزة. ملف النسخة الاحتياطية يتضمن الشخصيات والمشاريع والنصوص والصور المرجعية، ولا يتضمن ملفات الصور والفيديو والصوت المولّدة (حمّلها من مشاريعك).</p>
+      <button id="export" class="primary">تصدير بياناتي</button>
+      <label for="import">استيراد نسخة احتياطية (يستبدل البيانات الحالية)</label>
+      <input type="file" id="import" accept="application/json">
+      <p id="storageinfo" class="hint"></p>
+    </div>
+  </section>
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
+</body>
+</html>

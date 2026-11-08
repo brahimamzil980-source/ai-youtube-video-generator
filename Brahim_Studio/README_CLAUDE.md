@@ -12,6 +12,29 @@ You are continuing an existing application for me. Read this handoff and the att
 
 The immediate goal is my PRIVATE personal AI creative tool, inspired by the capabilities of Higgsfield, with my own identity. It is not a public SaaS at this stage. Do not add subscriptions, customer billing, public sharing, or multi-tenant features without asking. Preserve owner-only access and existing data. Work within existing authorization; ask only for missing information or consequential decisions.
 
+## 0. Progress update — 8 November 2026 (Claude, second session)
+
+Source now lives in `Brahim_Studio/` of the GitHub repo `ai-youtube-video-generator`, branch `claude/brahim-studio-development-4w0a34`. It is NOT deployed: this session had no access to the ChatGPT Sites project or its secrets.
+
+**Implemented (code complete, mocked tests + browser test with a simulated provider):**
+
+| Feature | Route | Provider call |
+| --- | --- | --- |
+| Writing (fixed) | `POST /api/ai/generate` | OpenAI `/v1/responses`; Claude `/v1/messages` now with `x-api-key` (was wrongly `Authorization: Bearer`) and `anthropic-version: 2026-10-21`, `max_tokens 16000`, `output_config.effort` (`ANTHROPIC_EFFORT`, default `medium`), refusal handling |
+| Downloadable narration | `POST /api/tts` → MP3/WAV bytes | OpenAI `/v1/audio/speech` (`OPENAI_TTS_MODEL`, default `gpt-4o-mini-tts`), 13 preset voices, ≤4000 chars, language/pace/style via `instructions` |
+| Images | `POST /api/image` → base64 JPEG | `/v1/images/generations`; with character/scene references `/v1/images/edits` (`image[]`, ≤4 refs, signature-checked). `OPENAI_IMAGE_MODEL`, default `gpt-image-2`. Sizes 1024x1536 / 1536x1024 / 1024x1024, quality low/medium/high |
+| Video (text→video, image→video) | `POST /api/video` → job id; `GET /api/video/status?id=`; `GET /api/video/content?id=` | `/v1/videos` multipart (`OPENAI_VIDEO_MODEL`, default `sora-2`), seconds 4/8/12, sizes 720x1280 / 1280x720, `input_reference` cropped client-side to the exact size |
+
+Other changes: paid actions require a confirm dialog; client request IDs reject replays (409); per-instance rate limits (`RATE_LIMIT_*`); generated media stored in browser IndexedDB with download buttons; video jobs stored in the project and resumed after reload; projects keep full draft fields (mode code, duration, character, raw prompt, quality) and reopen into the form; v1 localStorage data migrates automatically (verified in the browser test); stricter backup validation with schema `version: 2`; delete for saved scripts; frontend split into `public/js/*.js` (bundled by `scripts/bundle.mjs`); connection panel in Settings.
+
+**NOT verified live** (no keys and `api.openai.com` blocked in the build environment): every model ID default, real OpenAI/Claude responses, real image/audio/video output, prices, Sora content rules. Run `BRAHIM_LIVE_LOCAL=1 npm run smoke` (and `-- --video`) on the owner's machine with keys exported in the terminal, or test in the deployed site after adding secrets.
+
+**To activate on the existing Site:** add `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY` as server secrets in the Sites project (`appgprj_6af0a9ca2838819190fa29c10d3c6440`), `npm run build`, deploy `dist/` through the Sites workflow without changing access. Set monthly spend limits in the OpenAI and Anthropic dashboards — in-app limits are best effort only.
+
+Commands: `npm test` (13 mocked tests), `npm run check` (build + syntax), `npm run dev` (UI only, no provider calls), `BRAHIM_LIVE_LOCAL=1 npm run live` (real Worker on 127.0.0.1 with your exported keys).
+
+Still open: cloud sync (DB + object storage) for iPhone↔desktop; longer narrations than 4000 chars (split into parts); multi-turn chat; a host-side durable budget (KV/D1) instead of per-instance limits; iPhone Safari check on the real site.
+
 ## 1. Product intent and user context
 
 - Product name: **Brahim Studio** (temporary working name, not a final branding decision).
