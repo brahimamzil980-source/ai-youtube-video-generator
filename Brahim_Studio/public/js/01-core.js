@@ -44,6 +44,7 @@ function migrate(data) {
   out.projects = Array.isArray(out.projects) ? out.projects : [];
   out.voiceScripts = Array.isArray(out.voiceScripts) ? out.voiceScripts : [];
   out.audio = Array.isArray(out.audio) ? out.audio : [];
+  out.stories = Array.isArray(out.stories) ? out.stories : [];
   for (const p of out.projects) {
     if (MODE_CODES[p.mode]) p.mode = MODE_CODES[p.mode];
     if (!MODE_LABELS[p.mode]) p.mode = 'image';

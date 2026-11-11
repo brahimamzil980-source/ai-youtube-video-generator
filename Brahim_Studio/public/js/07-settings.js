@@ -51,7 +51,8 @@ function validateBackup(data) {
   const projectsOk = data.projects.every((p) => p && uniqueId(p.id) && isStr(p.text, 20000) && isOptStr(p.title, 500) && isOptStr(p.brand, 100) && isOptStr(p.mode, 50) && isOptStr(p.ratio, 10) && isOptStr(p.rawPrompt, 20000) && isImage(p.reference) && (p.outputs == null || Array.isArray(p.outputs)) && (p.jobs == null || Array.isArray(p.jobs)));
   const voiceOk = data.voiceScripts == null || (Array.isArray(data.voiceScripts) && data.voiceScripts.every((v) => v && uniqueId(v.id) && isStr(v.title, 500) && isStr(v.text, 50000) && isOptStr(v.language, 10) && isOptStr(String(v.rate ?? ''), 10)));
   const audioOk = data.audio == null || Array.isArray(data.audio);
-  return charsOk && projectsOk && voiceOk && audioOk;
+  const storiesOk = data.stories == null || (Array.isArray(data.stories) && data.stories.length <= 1000 && data.stories.every((st) => st && uniqueId(st.id) && isOptStr(st.title, 500) && Array.isArray(st.sceneIds)));
+  return charsOk && projectsOk && voiceOk && audioOk && storiesOk;
 }
 
 $('import').onchange = async (e) => {

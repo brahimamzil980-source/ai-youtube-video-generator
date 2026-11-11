@@ -64,6 +64,17 @@ audio{width:100%;margin-top:12px}
 .statusgrid div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #262e38;padding:8px 0;font-size:14px}
 .statusgrid span:last-child{direction:ltr;text-align:left;color:#b4bdc8}
 .error{color:#f39a8c}
+.scenes{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;margin-top:25px}
+.scene{border:1px solid #303945;background:#151a21;border-radius:14px;padding:16px;min-width:0}
+.scene .thumb{height:220px;background:#0d1014;border-radius:8px;display:grid;place-items:center;overflow:hidden;color:#6f7a87;font-size:13px}
+.scene .thumb img,.scene .thumb video{width:100%;height:100%;object-fit:contain}
+.scene textarea{min-height:90px;font-size:14px}
+.scene label{margin:12px 0 6px}
+.scene .actions button{flex:1 1 auto;padding:9px}
+.storyitem{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid #262e38;padding:10px 0}
+.storyitem button{flex:0 0 auto;padding:8px 12px}
+.pill{display:inline-block;border:1px solid #35442c;color:#b5f36c;border-radius:20px;padding:2px 9px;font-size:12px;margin-inline-start:6px}
+.pill.wait{border-color:#4a3a2c;color:#f3c36c}
 @media(max-width:800px){
   aside{position:sticky;top:0;z-index:2;width:100%;padding:12px 12px 8px;border-bottom:1px solid #303945;border-left:0}
   .logo{text-align:center;font-size:20px}
@@ -86,6 +97,7 @@ audio{width:100%;margin-top:12px}
   <div class="logo">bra<span class="dot">h</span>im studio<span class="dot">.</span></div>
   <nav aria-label="الأقسام">
     <button class="active" data-page="create">✧ استوديو الإبداع</button>
+    <button data-page="story">✎ قصة كاملة</button>
     <button data-page="assistant">✦ مساعد الكتابة</button>
     <button data-page="voice">♫ استوديو الصوت</button>
     <button data-page="characters">◉ شخصياتي</button>
@@ -143,6 +155,65 @@ audio{width:100%;margin-top:12px}
         <p class="hint">الشخصيات والمشاريع محفوظة في هذا المتصفح، والصور والفيديوهات والصوت المولّد محفوظة في قاعدة بيانات هذا المتصفح (IndexedDB). حمّل النتائج المهمة على جهازك.</p>
       </div>
     </div>
+  </section>
+
+  <section id="story" class="hidden">
+    <h1>قصة كاملة، من الفكرة إلى الفيديو.</h1>
+    <p>اكتب الفكرة، والمساعد يكتب القصة ويقسّمها إلى مشاهد. بعدها: صور المشاهد، تحريكها، التعليق الصوتي، وتحميل المشروع كاملًا.</p>
+    <div class="layout">
+      <div class="panel">
+        <div class="eyebrow">STORY PIPELINE / 04</div>
+        <label for="storyidea">فكرة القصة</label>
+        <textarea id="storyidea" dir="auto" maxlength="6000" placeholder="مثال: Drew gets a raise but ends up more broke than before because every small upgrade feels deserved."></textarea>
+        <div class="row">
+          <div><label for="storybrand">المشروع</label><select id="storybrand"><option>Origins Drawn</option><option>Little Hearts</option><option>مشروع شخصي</option></select></div>
+          <div><label for="storyprovider">الكاتب</label><select id="storyprovider"><option value="openai">OpenAI</option><option value="anthropic">Claude</option></select></div>
+        </div>
+        <label for="storycharacter">الشخصية الرئيسية</label>
+        <select id="storycharacter"></select>
+        <div class="row">
+          <div><label for="storyscenes">عدد المشاهد</label><select id="storyscenes"><option>3</option><option>4</option><option selected>5</option><option>6</option><option>8</option><option>10</option><option>12</option></select></div>
+          <div><label for="storylength">المدة التقريبية</label><select id="storylength"><option value="30">30 ثانية</option><option value="45" selected>45 ثانية</option><option value="60">60 ثانية</option><option value="90">90 ثانية</option><option value="120">دقيقتان</option></select></div>
+        </div>
+        <div class="row">
+          <div><label for="storylang">لغة التعليق</label><select id="storylang"><option value="en">English</option><option value="ar">العربية</option><option value="fr">Français</option></select></div>
+          <div><label for="storyratio">المقاس</label><select id="storyratio"><option>9:16</option><option>16:9</option></select></div>
+        </div>
+        <div class="actions"><button id="storyplan" class="primary">1 · كتابة القصة والمشاهد ↗</button></div>
+        <p id="storyplanstatus" class="hint" role="status" aria-live="polite"></p>
+        <h3>قصصك</h3>
+        <div id="storylist"></div>
+      </div>
+      <div class="panel">
+        <div id="storyempty" class="preview"><div><div class="orb">✎</div><h2>لا توجد قصة مفتوحة</h2><p>اكتب فكرة واضغط «كتابة القصة والمشاهد»، أو افتح قصة محفوظة.</p></div></div>
+        <div id="storyview" class="hidden">
+          <label for="storytitle">عنوان القصة</label>
+          <input id="storytitle" dir="auto" maxlength="200">
+          <p id="storymeta" class="hint"></p>
+          <div class="row">
+            <div><label for="storyquality">جودة الصور</label><select id="storyquality"><option value="low">منخفضة</option><option value="medium" selected>متوسطة</option><option value="high">عالية</option></select></div>
+            <div><label for="storyseconds">مدة كل مشهد متحرك</label><select id="storyseconds"><option value="4" selected>4 ثوانٍ</option><option value="8">8 ثوانٍ</option><option value="12">12 ثانية</option></select></div>
+          </div>
+          <div class="row">
+            <div><label for="storyvoice">صوت التعليق</label><select id="storyvoice"></select></div>
+            <div><label for="storyformat">الصيغة</label><select id="storyformat"><option value="mp3">MP3</option><option value="wav">WAV</option></select></div>
+          </div>
+          <div class="actions">
+            <button id="storyimages" class="primary">2 · صور المشاهد</button>
+            <button id="storyvideos" class="secondary">3 · تحريك المشاهد</button>
+            <button id="storynarration" class="secondary">4 · التعليق الصوتي</button>
+            <button id="storyzip" class="secondary">5 · تحميل المشروع (ZIP)</button>
+            <button id="storystop" class="secondary hidden">إيقاف بعد العنصر الحالي</button>
+          </div>
+          <progress id="storyprogress" class="hidden" value="0" max="1"></progress>
+          <p id="storystatus" class="hint" role="status" aria-live="polite"></p>
+          <div id="storyaudiowrap" class="hidden"><audio id="storyaudio" controls preload="metadata"></audio></div>
+          <div class="actions"><button id="storyaddscene" class="secondary">+ إضافة مشهد</button><button id="storydelete" class="secondary">حذف القصة</button></div>
+          <p class="hint">كل عملية توليد تطلب تأكيدك وتستهلك رصيد حسابك. الصور تُرسل صورة الشخصية كمرجع، والتحريك يبدأ من آخر صورة لكل مشهد.</p>
+        </div>
+      </div>
+    </div>
+    <div id="storyscenesgrid" class="scenes"></div>
   </section>
 
   <section id="assistant" class="hidden">

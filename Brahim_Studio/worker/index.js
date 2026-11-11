@@ -59,7 +59,7 @@ const MEDIA_BODY_LIMIT = 24_000_000;
 // Best-effort, per-instance spending guard. Worker instances do not share
 // memory, so this is NOT a hard budget: set a monthly budget/limit in the
 // provider dashboards as the real ceiling.
-const DEFAULT_RATE_LIMITS = { text: 30, image: 12, tts: 30, video: 4 }; // per 10 minutes
+const DEFAULT_RATE_LIMITS = { text: 30, image: 20, tts: 30, video: 10 }; // per 10 minutes
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 
 const OPENAI = 'https://api.openai.com/v1';
@@ -235,36 +235,30 @@ const openaiHeaders = (env, extra = {}) => ({ authorization: 'Bearer ' + env.OPE
 // Routes
 // ---------------------------------------------------------------------------
 
-async function generateText(body, env) {
-  const { provider, task, brand, prompt } = body || {};
-  if (!['openai', 'anthropic'].includes(provider) || !Object.hasOwn(TASKS, task) || !BRANDS.includes(brand) || typeof prompt !== 'string' || !prompt.trim() || prompt.length > 12000) {
-    return fail('تحقق من المزوّد والمهمة والنص (حتى 12000 حرف).', 400);
-  }
+// Calls the selected text model. Returns { text, model, truncated } or an error Response.
+async function callTextModel(env, provider, instructions, input, maxTokens) {
   const isOpenAI = provider === 'openai';
-  if (!(isOpenAI ? env.OPENAI_API_KEY : env.ANTHROPIC_API_KEY)) return fail('هذا المزوّد غير مفعّل. يلزم ضبط مفتاح API في الخادم.', 503);
+  if (!(isOpenAI ? env.OPENAI_API_KEY : env.ANTHROPIC_API_KEY)) return fail('هذا المزوّد غير مفعّل. أضف مفتاحه من «الاتصال والبيانات».', 503);
   const model = models(env)[provider];
-  const instructions = INSTRUCTIONS + '\nProject: ' + brand + '\nTask: ' + TASKS[task];
-
   let response;
   if (isOpenAI) {
     response = await callProvider(OPENAI + '/responses', {
       method: 'POST',
       headers: openaiHeaders(env, { 'content-type': 'application/json' }),
-      body: JSON.stringify({ model, instructions, input: prompt.trim(), max_output_tokens: 8000, store: false }),
-    }, 120_000);
+      body: JSON.stringify({ model, instructions, input, max_output_tokens: maxTokens, store: false }),
+    }, 150_000);
   } else {
-    const request = { model, system: instructions, messages: [{ role: 'user', content: prompt.trim() }], max_tokens: 16000 };
+    const request = { model, system: instructions, messages: [{ role: 'user', content: input }], max_tokens: Math.max(maxTokens, 16000) };
     const effort = env.ANTHROPIC_EFFORT ?? 'medium';
     if (effort) request.output_config = { effort };
     response = await callProvider(ANTHROPIC + '/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': ANTHROPIC_VERSION },
       body: JSON.stringify(request),
-    }, 120_000);
+    }, 150_000);
   }
   if (!response) return fail(TIMEOUT_MESSAGE, 504);
   if (!response.ok) return providerFailure(response);
-
   let data;
   try { data = await response.json(); } catch { return fail('وصل رد غير صالح من المزوّد.', 502); }
   if (!isOpenAI && data.stop_reason === 'refusal') return fail('رفض النموذج هذا الطلب. عدّل صياغته وحاول مرة أخرى.', 422);
@@ -272,12 +266,83 @@ async function generateText(body, env) {
     ? (data.output || []).filter((o) => o.type === 'message').flatMap((o) => o.content || []).filter((c) => c.type === 'output_text').map((c) => c.text).join('\n')
     : (data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('\n');
   if (!text) return fail('لم يصل نص قابل للعرض من المزوّد.', 502);
-  return json({
-    text,
-    provider: isOpenAI ? 'OpenAI' : 'Claude',
-    model,
-    truncated: isOpenAI ? data.status === 'incomplete' : data.stop_reason === 'max_tokens',
-  });
+  return { text, model, truncated: isOpenAI ? data.status === 'incomplete' : data.stop_reason === 'max_tokens' };
+}
+
+async function generateText(body, env) {
+  const { provider, task, brand, prompt } = body || {};
+  if (!['openai', 'anthropic'].includes(provider) || !Object.hasOwn(TASKS, task) || !BRANDS.includes(brand) || typeof prompt !== 'string' || !prompt.trim() || prompt.length > 12000) {
+    return fail('تحقق من المزوّد والمهمة والنص (حتى 12000 حرف).', 400);
+  }
+  const result = await callTextModel(env, provider, INSTRUCTIONS + '\nProject: ' + brand + '\nTask: ' + TASKS[task], prompt.trim(), 8000);
+  if (result instanceof Response) return result;
+  return json({ ...result, provider: provider === 'openai' ? 'OpenAI' : 'Claude' });
+}
+
+// ---------------------------------------------------------------------------
+// Story planning: idea -> title + scenes (narration, image prompt, motion prompt)
+// ---------------------------------------------------------------------------
+
+const STORY_LANGUAGES = { en: 'English', ar: 'Arabic', fr: 'French' };
+const BRAND_STYLE = {
+  'Origins Drawn': 'Hand-drawn black ink illustration on cream paper, cross-hatching, subtle watercolor accents, richly detailed environments full of meaningful objects, supporting characters and expressive action. Never visually empty.',
+  'Little Hearts': 'Warm, gentle storybook illustration for family stories, soft colors, cozy detailed settings, expressive caring characters.',
+  'مشروع شخصي': 'Consistent, polished illustration style chosen to suit the story.',
+};
+
+const STORY_INSTRUCTIONS = `You are the storyboard writer of Brahim Studio, a private tool that turns an idea into a short illustrated video.
+Return ONLY a JSON object, no markdown fences and no commentary, with exactly this shape:
+{"title": string, "scenes": [{"narration": string, "imagePrompt": string, "motionPrompt": string}]}
+Rules:
+- "narration": the words spoken over this scene, in the requested narration language, natural for text-to-speech, no stage directions.
+- "imagePrompt": in English, a self-contained description of ONE still frame: setting, characters with their fixed appearance, action, expressions, meaningful objects, composition and camera framing. Repeat the main character's fixed description in every scene so each image can be generated alone.
+- "motionPrompt": in English, one or two sentences describing subtle motion and camera movement for animating that frame (for example a slow push-in, a character turning, steam rising).
+- Never include brand logos, real trademarks, real people, or on-screen text.
+- Keep the story coherent from scene to scene, with a strong hook in the first scene and a satisfying or thought-provoking ending.
+- Narration length: about 2.5 words per second of the target duration, spread across the scenes.`;
+
+function extractJson(text) {
+  const cleaned = text.replace(/```(?:json)?/gi, '');
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start < 0 || end <= start) return null;
+  try { return JSON.parse(cleaned.slice(start, end + 1)); } catch { return null; }
+}
+
+function validPlan(plan, count) {
+  if (!plan || typeof plan !== 'object' || !Array.isArray(plan.scenes)) return null;
+  const str = (v, max) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
+  const scenes = plan.scenes.slice(0, Math.max(count, 1) + 2).map((sc) => ({
+    narration: str(sc?.narration, 1500),
+    imagePrompt: str(sc?.imagePrompt, 2500),
+    motionPrompt: str(sc?.motionPrompt, 800),
+  }));
+  if (!scenes.length || scenes.some((sc) => !sc.narration || !sc.imagePrompt || !sc.motionPrompt)) return null;
+  return { title: str(plan.title, 200) || 'Untitled story', scenes };
+}
+
+async function planStory(body, env) {
+  const { provider, brand, idea, scenes, seconds, language, character } = body || {};
+  const count = Number(scenes);
+  const total = Number(seconds);
+  if (!['openai', 'anthropic'].includes(provider) || !BRANDS.includes(brand) || typeof idea !== 'string' || !idea.trim() || idea.length > 6000
+    || !Number.isInteger(count) || count < 2 || count > 12 || !Number.isInteger(total) || total < 15 || total > 600 || !Object.hasOwn(STORY_LANGUAGES, language)
+    || (character != null && (typeof character?.name !== 'string' || character.name.length > 100 || typeof character?.description !== 'string' || character.description.length > 2000))) {
+    return fail('تحقق من الفكرة (حتى 6000 حرف) وعدد المشاهد (2 إلى 12) والمدة واللغة.', 400);
+  }
+  const input = [
+    'Story idea: ' + idea.trim(),
+    'Brand: ' + brand + '. Visual style for every imagePrompt: ' + BRAND_STYLE[brand],
+    character ? 'Main character "' + character.name + '" — fixed appearance to repeat in every imagePrompt: ' + character.description : 'Invent consistent characters and keep their appearance identical across scenes.',
+    'Number of scenes: exactly ' + count + '.',
+    'Target total duration: about ' + total + ' seconds.',
+    'Narration language: ' + STORY_LANGUAGES[language] + '.',
+  ].join('\n');
+  const result = await callTextModel(env, provider, STORY_INSTRUCTIONS, input, 12000);
+  if (result instanceof Response) return result;
+  const plan = validPlan(extractJson(result.text), count);
+  if (!plan) return fail('لم يرجع النموذج خطة مشاهد صالحة. حاول مرة أخرى أو جرّب المزوّد الآخر.', 502);
+  return json({ ...plan, provider: provider === 'openai' ? 'OpenAI' : 'Claude', model: result.model, truncated: result.truncated });
 }
 
 const RATE_INSTRUCTION = { '0.85': 'Speak at a calm, slightly slow pace.', '1': 'Speak at a natural pace.', '1.15': 'Speak at a brisk, energetic pace.' };
@@ -411,6 +476,7 @@ async function videoContent(id, env) {
 
 const POST_ROUTES = {
   '/api/ai/generate': { kind: 'text', limit: TEXT_BODY_LIMIT, handler: generateText },
+  '/api/story/plan': { kind: 'text', limit: TEXT_BODY_LIMIT, handler: planStory },
   '/api/tts': { kind: 'tts', limit: TEXT_BODY_LIMIT, handler: generateSpeech },
   '/api/image': { kind: 'image', limit: MEDIA_BODY_LIMIT, handler: generateImage },
   '/api/video': { kind: 'video', limit: MEDIA_BODY_LIMIT, handler: createVideo },

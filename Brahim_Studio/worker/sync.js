@@ -4,7 +4,7 @@
 // client's `updatedAt`; each accepted write gets a per-owner increasing `rev`, which is
 // the pull cursor. Records too large for a D1 row are stored as JSON objects in R2.
 
-const SYNC_KINDS = ['character', 'project', 'voiceScript', 'audio'];
+const SYNC_KINDS = ['character', 'project', 'voiceScript', 'audio', 'story'];
 const ASSET_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'audio/mpeg', 'audio/wav'];
 const ASSET_KINDS = ['image', 'video', 'audio'];
 const MAX_RECORD_BYTES = 6_000_000;
