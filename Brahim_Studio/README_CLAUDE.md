@@ -72,6 +72,23 @@ The owner chose to add an in-app key field, because the Sites UI showed no place
 - **Security trade-off accepted by the owner:** anyone with access to both the D1 data and the R2 master key could decrypt the keys. Setting `KEY_ENCRYPTION_SECRET` as a hosting secret removes the R2 half of that risk.
 - **Verified with mocks:** `scripts/keys.test.mjs` (9 tests: encryption at rest, no leaks through any route, precedence, owner scope, test endpoint, delete, wrong secret → "broken") and an iPhone Playwright run (save → test → generate an image with the saved key → delete; the key never appears in the page or localStorage).
 
+## 0e. Story pipeline — 11 November 2026 (Claude, sixth session)
+
+The target workflow from section 1 now exists as the «قصة كاملة» page. Before this it was only a description.
+
+1. **Plan:** `POST /api/story/plan` sends `{provider, brand, idea, scenes 2–12, seconds 15–600, language, character?}` to GPT or Claude. A fixed storyboard prompt asks for JSON `{title, scenes:[{narration, imagePrompt, motionPrompt}]}` with the brand style and the character's fixed description repeated in every image prompt, and forbids logos, real people and on-screen text. The server extracts the JSON (tolerates code fences), validates and caps it, and returns 502 on malformed output. Shared text calls now go through `callTextModel()`.
+2. **Scenes are ordinary projects** carrying `storyId`, `sceneIndex`, `narration` and `motionPrompt`, so image generation, video jobs and polling, outputs, sync and downloads are all reused. The story record (`db.stories`, synced as kind `story`) holds `sceneIds`, settings and the narration asset. Scene projects are hidden from «مشاريعي»; that page shows a count instead.
+3. **Batch actions,** each behind one confirmation with counts and models, run sequentially with a stop button. Finished items are kept when a step fails.
+   - Images: only for scenes without an image. The character photo is sent as a reference.
+   - Videos: image-to-video from each scene's latest image, cropped to 720×1280 or 1280×720, using the scene's motion prompt plus "keep style".
+   - Narration: all scene narrations through the long-narration path. The resume logic was refactored into `narrationJob()` / `generateNarration()` and is shared with the voice studio.
+   - ZIP download: `script.txt`, `story.json`, `scene-NN.jpg|mp4`, `narration.mp3|wav`. Built with a dependency-free stored-ZIP writer (`public/js/026-zip.js`, CRC-32, UTF-8 names).
+4. Scene text fields are editable inline. Edits update the prompt and are saved without re-rendering the cards, so typing focus is kept. Scenes can be regenerated, added or deleted individually.
+
+Also: every prompt built in the scene workbench now ends with "No brand logos, real trademarks or on-screen text." Default rate limits are now image 20 and video 10 per 10 minutes, so a story fits in one batch.
+
+**Verified with mocks:** 42 tests (new: ZIP readable by `unzip` with exact bytes and UTF-8 names; story plan validation and fence tolerance). An iPhone-size Playwright run covered: plan 3 scenes → edit a narration → 3 images → 3 videos polled to completion → narration → ZIP with 9 files, checked by `unzip -t`, with the edited narration inside → reload keeps the story. Earlier single-device and two-device sync runs still pass. **Not verified live:** real model output quality for the storyboard prompt, and video, which is still failing live; see PR #5's error details.
+
 ## 1. Product intent and user context
 
 - Product name: **Brahim Studio** (temporary working name, not a final branding decision).

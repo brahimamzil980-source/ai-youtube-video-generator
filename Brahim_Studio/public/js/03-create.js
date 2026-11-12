@@ -30,6 +30,7 @@ function buildPrompt({ rawPrompt, character, mode, ratio, duration }) {
     'Type: ' + { image: 'single still image', i2v: 'video animated from the reference image', t2v: 'video from text' }[mode],
     mode !== 'image' ? 'Duration: ' + duration + ' seconds' : '',
     character || mode === 'i2v' ? 'Maintain the original character appearance and clothing exactly as in the reference image.' : '',
+    'No brand logos, real trademarks or on-screen text.',
   ].filter(Boolean).join('\n\n');
 }
 
@@ -201,20 +202,44 @@ function setGenerating(on, message = '') {
   $('genstatus').textContent = message;
 }
 
-async function generateImage(p) {
-  const status = providerStatus.media.image;
+// Reference images for a project: character photo, then scene reference.
+async function projectReferences(p) {
   const references = [];
   const character = db.characters.find((c) => c.id === p.characterId);
   if (character?.image) references.push(await normalizeReference(character.image));
   if (p.reference) references.push(await normalizeReference(p.reference));
+  return references;
+}
+
+// Generates one image for a project and stores it as an output. No dialog, no page UI.
+async function requestImage(p, references) {
+  const data = await api('/api/image', { prompt: p.text, ratio: p.ratio, quality: p.quality, references: references ?? await projectReferences(p) });
+  const blob = base64ToBlob(data.image, data.mime);
+  const record = await putAsset(blob, { kind: 'image', projectId: p.id, model: data.model });
+  const output = { assetId: record.id, kind: 'image', mime: data.mime, model: data.model, createdAt: record.createdAt };
+  p.outputs.push(output);
+  save();
+  return { output, usedReferences: data.usedReferences };
+}
+
+// Starts a video job for a project; the result is saved by pollJobs(). No dialog, no page UI.
+async function startVideoJob(p, reference, prompt = p.text) {
+  const model = providerStatus.media.video.model;
+  const job = await api('/api/video', { prompt, ratio: p.ratio, seconds: p.duration, reference });
+  const entry = { id: job.id, device: DEVICE_ID, status: job.status, progress: job.progress, seconds: p.duration, size: VIDEO_SIZES[p.ratio].join('x'), model, createdAt: new Date().toISOString() };
+  p.jobs.push(entry);
+  save();
+  pollJobs();
+  return entry;
+}
+
+async function generateImage(p) {
+  const status = providerStatus.media.image;
+  const references = await projectReferences(p);
   if (!confirmPaid(['• توليد صورة واحدة بنموذج ' + status.model, '• المقاس ' + p.ratio + ' · الجودة ' + p.quality, '• صور مرجعية مرسلة: ' + references.length])) return;
   setGenerating(true, 'جارٍ توليد الصورة… قد يستغرق ذلك حتى دقيقتين. لا تغلق الصفحة.');
   try {
-    const data = await api('/api/image', { prompt: p.text, ratio: p.ratio, quality: p.quality, references });
-    const blob = base64ToBlob(data.image, data.mime);
-    const record = await putAsset(blob, { kind: 'image', projectId: p.id, model: data.model });
-    p.outputs.push({ assetId: record.id, kind: 'image', mime: data.mime, model: data.model, createdAt: record.createdAt });
-    save();
+    const data = await requestImage(p, references);
     setGenerating(false, 'تم توليد الصورة وحفظها في المشروع' + (data.usedReferences ? ' (باستعمال ' + data.usedReferences + ' مرجع).' : '.'));
     showProject(p);
   } catch (e) {
@@ -235,12 +260,9 @@ async function generateVideo(p) {
   if (!confirmPaid(['• فيديو واحد بنموذج ' + status.model, '• المدة ' + p.duration + ' ثوانٍ · المقاس ' + p.ratio, reference ? '• يبدأ من الصورة المرجعية (مقصوصة على المقاس)' : '• من الوصف فقط'])) return;
   setGenerating(true, 'جارٍ إرسال مهمة الفيديو…');
   try {
-    const job = await api('/api/video', { prompt: p.text, ratio: p.ratio, seconds: p.duration, reference });
-    p.jobs.push({ id: job.id, device: DEVICE_ID, status: job.status, progress: job.progress, seconds: p.duration, size: VIDEO_SIZES[p.ratio].join('x'), model: status.model, createdAt: new Date().toISOString() });
-    save();
+    await startVideoJob(p, reference);
     setGenerating(false, 'تم إنشاء مهمة الفيديو. التوليد يستغرق عادة بضع دقائق؛ يمكنك متابعة العمل وستُحفظ النتيجة تلقائيًا ما دام الموقع مفتوحًا.');
     showProject(p);
-    pollJobs();
   } catch (e) {
     setGenerating(false, e.message + ' لم تتم إعادة إرسال الطلب تلقائيًا.');
   }
@@ -311,9 +333,9 @@ async function pollJobs() {
             if (r.ok) {
               job.status = data.status;
               job.progress = data.progress;
-              if (data.status === 'failed') job.message = 'رفض المزوّد أو فشل في إنشاء الفيديو. عدّل الوصف أو الصورة وجرّب من جديد.';
+              if (data.status === 'failed') job.message = 'رفض المزوّد أو فشل في إنشاء الفيديو. عدّل الوصف أو الصورة وجرّب من جديد.' + (data.detail ? ' [تفاصيل المزوّد: ' + data.detail + ']' : '');
             } else if (r.status !== 504) {
-              job.message = data.error;
+              job.message = data.error + (data.detail ? ' [تفاصيل المزوّد: ' + data.detail + ']' : '');
             }
           } catch { /* network blip: try again next round */ }
         }
@@ -334,7 +356,7 @@ async function downloadJob(p, job) {
     const r = await fetch('/api/video/content?id=' + encodeURIComponent(job.id), { cache: 'no-store' });
     if (!r.ok) {
       let msg = 'تعذر تنزيل الفيديو.';
-      try { msg = (await r.json()).error || msg; } catch {}
+      try { const d = await r.json(); msg = (d.error || msg) + (d.detail ? ' [تفاصيل المزوّد: ' + d.detail + ']' : ''); } catch {}
       job.status = r.status === 410 ? 'expired' : 'error';
       job.message = msg;
       return;
@@ -345,7 +367,7 @@ async function downloadJob(p, job) {
     p.outputs.push({ assetId: record.id, kind: 'video', mime: 'video/mp4', model: job.model, createdAt: record.createdAt, jobId: job.id });
     job.status = 'downloaded';
     save();
-    toast('اكتمل الفيديو وحُفظ في المشروع');
+    toast(p.storyId ? 'اكتمل فيديو المشهد ' + ((p.sceneIndex ?? 0) + 1) : 'اكتمل الفيديو وحُفظ في المشروع');
     if (p.id === currentProjectId) showProject(p);
     render();
   } catch {
@@ -399,8 +421,11 @@ onRender(() => {
   });
 
   $('projectcards').replaceChildren();
-  if (!db.projects.length) $('projectcards').append(node('p', 'لم تضف أي مشروع بعد. ابدأ بتحضير مشهد.'));
-  db.projects.slice().reverse().forEach((p) => {
+  const standalone = db.projects.filter((p) => !p.storyId);
+  const sceneCount = db.projects.length - standalone.length;
+  if (!standalone.length) $('projectcards').append(node('p', 'لم تضف أي مشروع بعد. ابدأ بتحضير مشهد.'));
+  if (sceneCount) $('projectcards').append(node('p', sceneCount + ' مشهد من قصصك الكاملة موجودة في صفحة «قصة كاملة».', 'hint'));
+  standalone.slice().reverse().forEach((p) => {
     const card = node('div', null, 'card');
     const thumbHolder = node('div');
     card.append(thumbHolder);

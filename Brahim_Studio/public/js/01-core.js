@@ -44,6 +44,7 @@ function migrate(data) {
   out.projects = Array.isArray(out.projects) ? out.projects : [];
   out.voiceScripts = Array.isArray(out.voiceScripts) ? out.voiceScripts : [];
   out.audio = Array.isArray(out.audio) ? out.audio : [];
+  out.stories = Array.isArray(out.stories) ? out.stories : [];
   for (const p of out.projects) {
     if (MODE_CODES[p.mode]) p.mode = MODE_CODES[p.mode];
     if (!MODE_LABELS[p.mode]) p.mode = 'image';
@@ -119,7 +120,11 @@ async function api(path, body, { binary = false } = {}) {
   }
   if (!response.ok) {
     let message = 'تعذر إكمال الطلب (' + response.status + ').';
-    try { message = (await response.json()).error || message; } catch {}
+    try {
+      const data = await response.json();
+      message = data.error || message;
+      if (data.detail) message += ' [تفاصيل المزوّد: ' + data.detail + ']';
+    } catch {}
     if (response.status === 401) message = 'انتهت الجلسة أو لم تسجّل الدخول. أعد فتح الموقع وسجّل الدخول.';
     throw Error(message);
   }

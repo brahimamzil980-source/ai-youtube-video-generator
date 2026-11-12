@@ -15,6 +15,19 @@ const MASTER_OBJECT = 'system/provider-key-master.bin';
 const KEY_TEST_WINDOW_MS = 10 * 60 * 1000;
 const KEY_TEST_LIMIT = 10;
 
+// Provider error details (OpenAI and Anthropic share `{ error: { type, code, message } }`).
+// Anything that looks like a key or auth header is removed, and the text is capped.
+function providerDetail(data) {
+  const e = data?.error;
+  if (!e || typeof e !== 'object') return null;
+  const tags = [e.code, e.type, e.param].filter((x) => typeof x === 'string' && x).map((x) => x.slice(0, 80));
+  const message = typeof e.message === 'string'
+    ? e.message.replace(/\b(sk|rk|pk)-[A-Za-z0-9_*.-]{4,}/g, '[key]').replace(/Bearer\s+\S+/gi, 'Bearer [key]').replace(/\s+/g, ' ').trim().slice(0, 300)
+    : '';
+  const detail = [tags.join(' / '), message].filter(Boolean).join(' — ');
+  return detail || null;
+}
+
 const keySchemaReady = new WeakMap();
 const keyTests = new Map();
 
@@ -123,9 +136,12 @@ async function handleKeys(request, env, url, user, { json, fail, readLimited }) 
       return fail('تعذر الوصول إلى المزوّد للاختبار.', 504);
     }
     if (response.ok) return json({ ok: true, message: 'المفتاح صالح والمزوّد يقبله.' });
-    if (response.status === 401 || response.status === 403) return json({ ok: false, message: 'المزوّد رفض هذا المفتاح (غير صالح أو ملغى).' });
-    if (response.status === 429) return json({ ok: false, message: 'المفتاح معروف لكن المزوّد أوقف الطلب (رصيد أو حد استخدام).' });
-    return json({ ok: false, message: 'رد غير متوقع من المزوّد (' + response.status + ').' });
+    let detail = null;
+    try { detail = providerDetail(await response.json()); } catch {}
+    const withDetail = (m) => m + (detail ? ' [تفاصيل المزوّد: ' + detail + ']' : '');
+    if (response.status === 401 || response.status === 403) return json({ ok: false, message: withDetail('المزوّد رفض هذا المفتاح (غير صالح أو ملغى).') });
+    if (response.status === 429) return json({ ok: false, message: withDetail('المفتاح معروف لكن المزوّد أوقف الطلب (رصيد أو حد استخدام).') });
+    return json({ ok: false, message: withDetail('رد غير متوقع من المزوّد (' + response.status + ').') });
   }
 
   if (!keyStorageAvailable(env)) return fail('حفظ المفاتيح يحتاج قاعدة D1 (DB) وتخزين R2 (MEDIA) في الاستضافة.', 503);
@@ -150,4 +166,4 @@ async function handleKeys(request, env, url, user, { json, fail, readLimited }) 
   return json({ saved: true, last4: key.slice(-4), overriddenByServer: !!env[cfg.env] });
 }
 
-export { handleKeys, withStoredKeys };
+export { handleKeys, withStoredKeys, providerDetail };

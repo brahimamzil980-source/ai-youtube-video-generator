@@ -126,13 +126,66 @@ function updateTtsState() {
 }
 onStatus(updateTtsState);
 
-// A long text is generated part by part. Finished parts stay in memory, so after a
-// failure or a stop, pressing generate again only pays for the remaining parts.
-let ttsJob = null;
+// A long text is generated part by part. Finished parts stay in memory (per text and
+// settings), so after a failure or a stop, generating again only pays for missing parts.
+const narrationJobs = new Map();
 let ttsStop = false;
 
 function ttsSettings(text) {
   return { text, voice: $('ttsvoice').value, language: $('voicelang').value, format: $('ttsformat').value, rate: $('voicerate').value, style: $('ttsstyle').value.trim() || null };
+}
+
+function narrationJob(settings) {
+  const key = JSON.stringify(settings);
+  if (!narrationJobs.has(key)) {
+    const parts = splitNarration(settings.text, Math.min(3800, providerStatus.media.tts.maxChars));
+    narrationJobs.set(key, { key, settings, parts, audio: parts.map(() => null), model: providerStatus.media.tts.model });
+  }
+  return narrationJobs.get(key);
+}
+
+// Confirmation lines describing what a narration will cost.
+function narrationCostLines(job) {
+  const remaining = job.audio.filter((a) => !a).length;
+  const lines = ['• ملف صوتي ' + job.settings.format.toUpperCase() + ' بنموذج ' + job.model, '• الصوت ' + job.settings.voice + ' · ' + job.settings.text.length + ' حرف'];
+  if (job.parts.length > 1) lines.push('• النص طويل: ' + job.parts.length + ' أجزاء' + (remaining < job.parts.length ? '، باقي ' + remaining + ' (الأجزاء الجاهزة لن تُعاد)' : '') + '، ثم تُدمج في ملف واحد');
+  return lines;
+}
+
+// Generates (or resumes) a narration and saves it to the audio library.
+// onProgress(done, total, message) reports progress; shouldStop() can end it between parts.
+async function generateNarration(job, title, { onProgress = () => {}, shouldStop = () => false } = {}) {
+  const total = job.parts.length;
+  for (let i = 0; i < total; i++) {
+    if (job.audio[i]) continue;
+    if (shouldStop()) throw Error('تم الإيقاف بعد ' + job.audio.filter(Boolean).length + ' من ' + total + ' أجزاء. اضغط «توليد» لإكمال الباقي.');
+    onProgress(job.audio.filter(Boolean).length, total, total > 1 ? 'جارٍ توليد الجزء ' + (i + 1) + ' من ' + total + '…' : 'جارٍ توليد الملف الصوتي…');
+    let response;
+    try {
+      response = await api('/api/tts', { ...job.settings, text: job.parts[i] }, { binary: true });
+    } catch (e) {
+      throw Error((total > 1 ? 'توقف عند الجزء ' + (i + 1) + ': ' : '') + e.message + (total > 1 && i > 0 ? ' الأجزاء الجاهزة محفوظة؛ اضغط «توليد» لإكمال الباقي فقط.' : ''));
+    }
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.length < 100) throw Error('وصل جزء صوتي فارغ.');
+    job.audio[i] = bytes;
+    job.model = response.headers.get('x-brahim-model') || job.model;
+  }
+  onProgress(total, total, total > 1 ? 'جارٍ دمج ' + total + ' أجزاء في ملف واحد…' : 'جارٍ الحفظ…');
+  let merged;
+  try {
+    merged = mergeAudio(job.audio, job.settings.format);
+  } catch (e) {
+    throw Error('تعذر دمج الأجزاء: ' + e.message);
+  }
+  const mime = job.settings.format === 'mp3' ? 'audio/mpeg' : 'audio/wav';
+  const record = await putAsset(new Blob([merged], { type: mime }), { kind: 'audio', model: job.model });
+  const entry = { assetId: record.id, title, voice: job.settings.voice, language: job.settings.language, format: job.settings.format, mime, model: job.model, chars: job.settings.text.length, parts: total, size: merged.length, createdAt: record.createdAt };
+  db.audio.push(entry);
+  save();
+  narrationJobs.delete(job.key);
+  renderAudio();
+  return entry;
 }
 
 function ttsProgress(done, total) {
@@ -143,62 +196,24 @@ function ttsProgress(done, total) {
 
 $('ttsgenerate').onclick = async () => {
   if (ttsBusy) return;
-  const tts = providerStatus?.media?.tts;
   const text = $('voicetext').value.trim();
   if (!text) return toast('أدخل نص التعليق الصوتي');
   if (text.length > LONG_TEXT_MAX_CHARS) return toast('النص أطول من ' + LONG_TEXT_MAX_CHARS + ' حرف. قسّمه إلى ملفات.');
-  const settings = ttsSettings(text);
-  const key = JSON.stringify(settings);
-  if (!ttsJob || ttsJob.key !== key) {
-    const parts = splitNarration(text, Math.min(3800, tts.maxChars));
-    ttsJob = { key, settings, parts, audio: parts.map(() => null), model: tts.model };
-  }
-  const job = ttsJob;
-  const remaining = job.audio.filter((a) => !a).length;
-  const lines = ['• ملف صوتي ' + settings.format.toUpperCase() + ' بنموذج ' + tts.model, '• الصوت ' + settings.voice + ' · ' + text.length + ' حرف'];
-  if (job.parts.length > 1) lines.push('• النص طويل: ' + job.parts.length + ' أجزاء' + (remaining < job.parts.length ? '، باقي ' + remaining + ' (الأجزاء الجاهزة لن تُعاد)' : '') + '، ثم تُدمج في ملف واحد');
-  if (!confirmPaid(lines)) return;
-
+  const job = narrationJob(ttsSettings(text));
+  if (!confirmPaid(narrationCostLines(job))) return;
   ttsBusy = true;
   ttsStop = false;
   updateTtsState();
   $('ttsstop').classList.toggle('hidden', job.parts.length < 2);
   try {
-    for (let i = 0; i < job.parts.length; i++) {
-      if (job.audio[i]) continue;
-      if (ttsStop) throw Error('تم الإيقاف بعد ' + job.audio.filter(Boolean).length + ' من ' + job.parts.length + ' أجزاء. اضغط «توليد» لإكمال الباقي.');
-      ttsProgress(job.audio.filter(Boolean).length, job.parts.length);
-      $('ttsstatus').textContent = job.parts.length > 1 ? 'جارٍ توليد الجزء ' + (i + 1) + ' من ' + job.parts.length + '…' : 'جارٍ توليد الملف الصوتي…';
-      let response;
-      try {
-        response = await api('/api/tts', { ...settings, text: job.parts[i] }, { binary: true });
-      } catch (e) {
-        throw Error((job.parts.length > 1 ? 'توقف عند الجزء ' + (i + 1) + ': ' : '') + e.message + (job.parts.length > 1 && i > 0 ? ' الأجزاء الجاهزة محفوظة؛ اضغط «توليد» لإكمال الباقي فقط.' : ''));
-      }
-      const bytes = new Uint8Array(await response.arrayBuffer());
-      if (bytes.length < 100) throw Error('وصل جزء صوتي فارغ.');
-      job.audio[i] = bytes;
-      job.model = response.headers.get('x-brahim-model') || job.model;
-    }
-    ttsProgress(job.parts.length, job.parts.length);
-    $('ttsstatus').textContent = job.parts.length > 1 ? 'جارٍ دمج ' + job.parts.length + ' أجزاء في ملف واحد…' : $('ttsstatus').textContent;
-    let merged;
-    try {
-      merged = mergeAudio(job.audio, settings.format);
-    } catch (e) {
-      throw Error('تعذر دمج الأجزاء: ' + e.message);
-    }
-    const mime = settings.format === 'mp3' ? 'audio/mpeg' : 'audio/wav';
-    const record = await putAsset(new Blob([merged], { type: mime }), { kind: 'audio', model: job.model });
-    const title = $('voicetitle').value.trim() || text.slice(0, 40);
-    db.audio.push({ assetId: record.id, title, voice: settings.voice, language: settings.language, format: settings.format, mime, model: job.model, chars: text.length, parts: job.parts.length, createdAt: record.createdAt });
-    save();
-    ttsJob = null;
-    lastAudio = db.audio[db.audio.length - 1];
-    $('ttsaudio').src = await assetUrl(record.id);
+    const entry = await generateNarration(job, $('voicetitle').value.trim() || text.slice(0, 40), {
+      onProgress: (done, total, message) => { ttsProgress(done, total); $('ttsstatus').textContent = message; },
+      shouldStop: () => ttsStop,
+    });
+    lastAudio = entry;
+    $('ttsaudio').src = await assetUrl(entry.assetId);
     $('ttsresult').classList.remove('hidden');
-    $('ttsstatus').textContent = 'تم توليد الملف (' + Math.round(merged.length / 1024) + ' KB' + (job.parts.length > 1 ? '، ' + job.parts.length + ' أجزاء مدمجة' : '') + ') وحفظه في «ملفاتك الصوتية».';
-    renderAudio();
+    $('ttsstatus').textContent = 'تم توليد الملف (' + Math.round(entry.size / 1024) + ' KB' + (entry.parts > 1 ? '، ' + entry.parts + ' أجزاء مدمجة' : '') + ') وحفظه في «ملفاتك الصوتية».';
   } catch (e) {
     $('ttsstatus').textContent = e.message + ' لم تتم إعادة إرسال أي طلب تلقائيًا.';
   } finally {

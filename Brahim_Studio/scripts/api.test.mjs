@@ -228,3 +228,20 @@ test('timeouts and network failures return 504 without retry', async () => {
   });
   assert.equal(calls, 1);
 });
+
+test('provider error details are passed on with keys and auth headers removed', async () => {
+  const upstream = { error: { type: 'invalid_request_error', code: 'organization_not_verified', message: 'Your organization must be verified to use sora-2. Key sk-proj-ABCDEF123456 header Bearer sk-live-XYZ987654' } };
+  await withFetch(async () => Response.json(upstream, { status: 403 }), async () => {
+    const r = await app.fetch(req('/api/video', { prompt: 'cup', ratio: '16:9', seconds: '4' }), { OPENAI_API_KEY: 'k' });
+    const data = await r.json();
+    assert.equal(r.status, 502);
+    assert.match(data.detail, /organization_not_verified/);
+    assert.match(data.detail, /must be verified to use sora-2/);
+    assert(!/ABCDEF123456|XYZ987654/.test(JSON.stringify(data)), 'key leaked');
+  });
+  await withFetch(async () => Response.json({ id: 'video_abc123', status: 'failed', error: { code: 'moderation_blocked', message: 'Blocked by moderation.' } }), async () => {
+    const data = await (await app.fetch(get('/api/video/status?id=video_abc123'), { OPENAI_API_KEY: 'k' })).json();
+    assert.equal(data.status, 'failed');
+    assert.match(data.detail, /moderation_blocked/);
+  });
+});

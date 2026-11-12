@@ -8,6 +8,7 @@ const SYNC_SOURCES = {
   project: { list: () => db.projects, set: (l) => (db.projects = l), key: (x) => x.id },
   voiceScript: { list: () => db.voiceScripts, set: (l) => (db.voiceScripts = l), key: (x) => x.id },
   audio: { list: () => db.audio, set: (l) => (db.audio = l), key: (x) => x.assetId },
+  story: { list: () => db.stories, set: (l) => (db.stories = l), key: (x) => x.id },
 };
 
 let syncBusy = false;
@@ -182,7 +183,7 @@ async function syncNow({ manual = false } = {}) {
     const uploaded = await uploadAssets();
     db.sync.lastSync = Date.now();
     save({ fromSync: true });
-    if (changed) { render(); renderScripts(); renderAudio(); const p = currentProject(); if (p) showProject(p); }
+    if (changed) { render(); renderScripts(); renderAudio(); renderStoryPage(); const p = currentProject(); if (p) showProject(p); }
     if (manual) toast('تمت المزامنة' + (uploaded ? ' (رُفع ' + uploaded + ' ملف)' : ''));
   } catch (e) {
     lastSyncError = e.message || 'تعذرت المزامنة.';
